@@ -48,7 +48,7 @@ class MyApp extends StatelessWidget {
           builder: (context, child) {
             return MediaQuery(
               data: MediaQuery.of(context).copyWith(
-                textScaleFactor: 1.0,
+                textScaler: TextScaler.linear(1.0),
               ),
               child: Center(
                 child: Container(
@@ -117,10 +117,7 @@ class HomeScreen extends StatelessWidget {
             ),
 
             // 할 일 관리 섹션
-            SizedBox(
-              height: 400,
-              child: const TaskList(),
-            ),
+            const TaskList(),
 
             // 포모도로 타이머 섹션
             Container(

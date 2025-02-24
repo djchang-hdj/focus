@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/task.dart';
 import 'dart:async';
+import 'package:uuid/uuid.dart';
 
 class TaskProvider with ChangeNotifier {
   static const String _tasksKey = 'tasks';
+  static const uuid = Uuid();
   late SharedPreferences _prefs;
   Map<String, List<Task>> _tasks = {};
   DateTime _selectedDate = DateTime.now();
@@ -67,20 +69,20 @@ class TaskProvider with ChangeNotifier {
     await _prefs.setString(_tasksKey, tasksJson);
   }
 
-  Future<void> addTask(String title) async {
+  void addTask(String title) {
     final dateKey = _getDateKey(_selectedDate);
-    final task = Task(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: title,
-      date: _selectedDate,
-    );
-
     if (!_tasks.containsKey(dateKey)) {
       _tasks[dateKey] = [];
     }
-    _tasks[dateKey]!.add(task);
 
-    await _saveTasks();
+    _tasks[dateKey]!.add(Task(
+      id: uuid.v4(),
+      title: title,
+      isCompleted: false,
+      date: _selectedDate,
+    ));
+
+    _saveTasks();
     notifyListeners();
   }
 
@@ -118,19 +120,19 @@ class TaskProvider with ChangeNotifier {
 
     _tasks[dateKey]!.addAll([
       Task(
-        id: '${DateTime.now()}1',
+        id: uuid.v4(),
         title: '운동하기',
         isCompleted: false,
         date: _selectedDate,
       ),
       Task(
-        id: '${DateTime.now()}2',
+        id: uuid.v4(),
         title: '독서하기',
         isCompleted: false,
         date: _selectedDate,
       ),
       Task(
-        id: '${DateTime.now()}3',
+        id: uuid.v4(),
         title: '코딩하기',
         isCompleted: false,
         date: _selectedDate,
@@ -144,5 +146,23 @@ class TaskProvider with ChangeNotifier {
     final dateKey = _getDateKey(_selectedDate);
     _tasks[dateKey]?.removeWhere((task) => task.id == taskId);
     notifyListeners();
+  }
+
+  void _addDefaultTasks(TaskProvider taskProvider) {
+    final defaultTasks = [
+      '이메일 플래그 지금 정리하라!',
+      '과제 지금 관리하라!',
+      '오늘 할 일 목록 당장 점검하라!',
+      '책 30분 이상 읽어라!',
+      '1시간 이상 집중 공부하라!',
+      '오늘의 일기 반드시 작성하라!',
+    ];
+
+    // 각 태스크를 개별적으로 추가하되, 약간의 딜레이를 줌
+    for (var i = 0; i < defaultTasks.length; i++) {
+      Future.delayed(Duration(milliseconds: i * 10), () {
+        taskProvider.addTask(defaultTasks[i]);
+      });
+    }
   }
 }

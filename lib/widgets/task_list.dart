@@ -26,27 +26,23 @@ class _TaskListState extends State<TaskList> {
   Widget build(BuildContext context) {
     return Consumer<TaskProvider>(
       builder: (context, taskProvider, child) {
-        // 초기화 상태 확인
-        if (!taskProvider.isInitialized) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        }
-
         final tasks = taskProvider.currentTasks;
 
         return Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             _buildDateSelector(context, taskProvider),
             _buildProgressBar(taskProvider),
-            if (tasks.isEmpty) _buildEmptyState(context, taskProvider),
-            if (tasks.isNotEmpty)
-              Expanded(
+            if (tasks.isEmpty)
+              _buildEmptyState(context, taskProvider)
+            else
+              Flexible(
                 child: ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                   itemCount: tasks.length,
                   itemBuilder: (context, index) {
-                    final task = tasks[index];
-                    return _buildTaskItem(context, task, taskProvider);
+                    return _buildTaskItem(context, tasks[index], taskProvider);
                   },
                 ),
               ),
@@ -58,33 +54,30 @@ class _TaskListState extends State<TaskList> {
   }
 
   Widget _buildEmptyState(BuildContext context, TaskProvider taskProvider) {
-    return Expanded(
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.task_alt,
-              size: 64,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '할 일이 없습니다',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color:
-                        Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                  ),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () {
-                _addDefaultTasks(taskProvider);
-              },
-              child: const Text('기본 할 일 추가하기'),
-            ),
-          ],
-        ),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.task_alt,
+            size: 64,
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '할 일이 없습니다',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                ),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () {
+              _addDefaultTasks(taskProvider);
+            },
+            child: const Text('기본 할 일 추가하기'),
+          ),
+        ],
       ),
     );
   }
@@ -176,7 +169,7 @@ class _TaskListState extends State<TaskList> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('진행률'),
+              const Text('성취율'),
               Text(
                 '${(taskProvider.completionRate * 100).toStringAsFixed(1)}%',
                 style: const TextStyle(fontWeight: FontWeight.bold),
@@ -205,7 +198,7 @@ class _TaskListState extends State<TaskList> {
   Widget _buildTaskItem(
       BuildContext context, Task task, TaskProvider taskProvider) {
     return Dismissible(
-      key: Key(task.id),
+      key: ValueKey(task.id), // UUID만으로 충분합니다
       background: Container(
         color: Colors.red.shade300,
         alignment: Alignment.centerRight,
@@ -259,6 +252,11 @@ class _TaskListState extends State<TaskList> {
         ),
       ),
     );
+  }
+
+  // 날짜 키 생성 헬퍼 메서드 추가
+  String _getDateKey(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
   Widget _buildAddTaskField(BuildContext context, TaskProvider taskProvider) {
