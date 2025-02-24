@@ -42,37 +42,110 @@ class _FocusTimerState extends State<FocusTimer> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('제목: ${timerProvider.title}'),
-                      Text('설정 시간: ${timerProvider.initialDuration ~/ 60}분'),
-                      Text(
-                          '시작 시간: ${_formatTimeAmPm(timerProvider.startTime!)}'),
+                      RichText(
+                        text: TextSpan(
+                          text: '현재작업: ',
+                          style: DefaultTextStyle.of(context).style,
+                          children: <TextSpan>[
+                            TextSpan(
+                              text: timerProvider.title,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                      RichText(
+                        text: TextSpan(
+                          text: '설정 시간: ',
+                          style: DefaultTextStyle.of(context).style,
+                          children: <TextSpan>[
+                            TextSpan(
+                              text: '${timerProvider.initialDuration ~/ 60}분',
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                      RichText(
+                        text: TextSpan(
+                          text: '시작 시간: ',
+                          style: DefaultTextStyle.of(context).style,
+                          children: <TextSpan>[
+                            TextSpan(
+                              text: _formatTimeAmPm(timerProvider.startTime!),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
             const SizedBox(height: 16),
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 200,
-                  height: 200,
-                  child: CircularProgressIndicator(
-                    value: timerProvider.progress,
-                    strokeWidth: 12,
-                    backgroundColor: Colors.grey[300],
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      HSLColor.fromColor(Theme.of(context).colorScheme.primary)
-                          .withLightness(0.6)
-                          .toColor(),
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: 250,
+                maxHeight: 250,
+              ),
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    TweenAnimationBuilder<double>(
+                      tween: Tween<double>(
+                        begin: 0,
+                        end: timerProvider.progress,
+                      ),
+                      duration: const Duration(milliseconds: 300),
+                      builder: (context, value, _) {
+                        return SizedBox.expand(
+                          child: CircularProgressIndicator(
+                            value: value,
+                            strokeWidth: 24,
+                            backgroundColor: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
+                          style: Theme.of(context)
+                              .textTheme
+                              .displayMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 70, // 폰트 크기 약간 줄이기
+                              ),
+                        ),
+                        if (timerProvider.status == TimerStatus.running)
+                          Text(
+                            '집중 중...',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontSize: 32,
+                                ),
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
-                Text(
-                  '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
-                  style: Theme.of(context).textTheme.displayMedium,
-                ),
-              ],
+              ),
             ),
             const SizedBox(height: 20),
             Row(

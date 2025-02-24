@@ -108,79 +108,94 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // 금기사항 섹션
-            Container(
-              padding: const EdgeInsets.all(16.0),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        '금기사항',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 16),
+
+                    const SizedBox(height: 16),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 400),
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            children: [
+                              StreamBuilder<int>(
+                                stream: Stream.periodic(
+                                    const Duration(seconds: 15), (i) => i % 4),
+                                builder: (context, snapshot) {
+                                  final quotes = [
+                                    '"미래의 나에게 기대를 걸지 않는다."',
+                                    '"한 덩어리로 포장하지 말고, 과정을 분해하고 또 분해한다."',
+                                    '"막상 해보면 금방 끝나는 일이 많다."',
+                                    '"하루 물림이 열흘 간다."',
+                                  ];
+                                  final index = snapshot.data ?? 0;
+                                  return Text(
+                                    quotes[index],
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      SizedBox(height: 8),
-                      Text('• 유튜브, 넷플릭스, OTT 안 보기'),
-                      Text('• 커뮤니티 들어가지 않기'),
-                      Text('• 불필요한 웹서핑 하지 말기'),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+                    ),
+                    const SizedBox(height: 16),
+                    // 할 일 관리 섹션
+                    const TaskList(),
 
-            // 할 일 관리 섹션
-            const TaskList(),
+                    const SizedBox(height: 16),
+                    // 포모도로 타이머 섹션
+                    const FocusTimer(),
 
-            // 포모도로 타이머 섹션
-            Container(
-              padding: const EdgeInsets.all(16.0),
-              child: const FocusTimer(),
-            ),
+                    const SizedBox(height: 16),
 
-            // 명언 섹션
-            Container(
-              padding: const EdgeInsets.all(16.0),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      StreamBuilder<int>(
-                        stream: Stream.periodic(
-                            const Duration(minutes: 1), (i) => i % 4),
-                        builder: (context, snapshot) {
-                          final quotes = [
-                            '"미래의 나에게 기대를 걸지 않는다."',
-                            '"한 덩어리로 포장하지 말고, 과정을 분해하고 또 분해한다."',
-                            '"막상 해보면 금방 끝나는 일이 많다."',
-                            '"하루 물림이 열흘 간다."',
-                          ];
-                          final index = snapshot.data ?? 0;
-                          return Text(
-                            quotes[index],
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          );
-                        },
+                    // 금기사항 섹션
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 400),
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text(
+                                '집중을 유지하기 위해',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Text('• 유튜브, 넷플릭스, OTT 안 보기'),
+                              Text('• 커뮤니티 들어가지 않기'),
+                              Text('• 불필요한 웹서핑 하지 말기'),
+                            ],
+                          ),
+                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

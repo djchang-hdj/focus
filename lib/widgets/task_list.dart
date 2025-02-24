@@ -231,8 +231,12 @@ class _TaskListState extends State<TaskList> {
         );
       },
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+        margin: const EdgeInsets.symmetric(vertical: 4.0),
         child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16.0,
+            vertical: 4.8, // 60% of the original 8.0
+          ),
           leading: Checkbox(
             value: task.isCompleted,
             onChanged: (bool? value) {
@@ -274,25 +278,28 @@ class _TaskListState extends State<TaskList> {
                               .bodyMedium
                               ?.color
                               ?.withValues(
-                                alpha:
-                                    (Theme.of(context).colorScheme.primary.a *
-                                            0.1)
-                                        .toDouble(),
+                                alpha: 128.0, // 0.5 * 255
                                 red: Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                    .r
-                                    .toDouble(),
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.color
+                                        ?.r
+                                        .toDouble() ??
+                                    0.0,
                                 green: Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                    .g
-                                    .toDouble(),
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.color
+                                        ?.g
+                                        .toDouble() ??
+                                    0.0,
                                 blue: Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                    .b
-                                    .toDouble(),
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.color
+                                        ?.b
+                                        .toDouble() ??
+                                    0.0,
                               )
                           : null,
                     ),
