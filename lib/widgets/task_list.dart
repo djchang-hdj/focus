@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart'; // 날짜 형식을 위해 추가
 import '../providers/task_provider.dart';
 import '../models/task.dart';
+import '../providers/timer_provider.dart';
 
 class TaskList extends StatefulWidget {
   const TaskList({super.key});
@@ -235,7 +236,7 @@ class _TaskListState extends State<TaskList> {
           leading: Checkbox(
             value: task.isCompleted,
             onChanged: (bool? value) {
-              taskProvider.toggleTask(task.id);
+              context.read<TaskProvider>().toggleTask(task.id);
             },
           ),
           title: GestureDetector(
@@ -297,17 +298,34 @@ class _TaskListState extends State<TaskList> {
                     ),
                   ),
           ),
-          trailing: IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () {
-              taskProvider.deleteTask(task.id);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('할 일이 삭제되었습니다'),
-                  duration: Duration(seconds: 2),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!task.isCompleted)
+                IconButton(
+                  icon: const Icon(Icons.timer),
+                  onPressed: () {
+                    final timerProvider = context.read<TimerProvider>();
+                    if (timerProvider.status == TimerStatus.running) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('이미 다른 작업이 진행 중입니다.'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    } else {
+                      timerProvider.setTitle(task.title);
+                      timerProvider.start();
+                    }
+                  },
                 ),
-              );
-            },
+              IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () {
+                  context.read<TaskProvider>().removeTask(task.id);
+                },
+              ),
+            ],
           ),
         ),
       ),

@@ -44,6 +44,7 @@ class TimerProvider with ChangeNotifier {
   DateTime? get startTime => _startTime;
   int get initialDuration => _initialDuration;
   List<TimerRecord> get records => List.unmodifiable(_records);
+  bool get isRunning => _status == TimerStatus.running;
 
   Future<void> _loadSettings() async {
     try {
@@ -186,6 +187,10 @@ class TimerProvider with ChangeNotifier {
       _records.removeAt(index);
       notifyListeners();
     }
+  }
+
+  void setCurrentTask(String taskTitle) {
+    setTitle(taskTitle);
   }
 
   @override
