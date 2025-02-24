@@ -52,7 +52,7 @@ class TimerProvider with ChangeNotifier {
       _remainingTime = _duration;
       notifyListeners();
     } catch (e) {
-      debugPrint('Error loading timer settings: $e');
+      debugPrint('Timer settings initialization failed: $e');
       // 기본값 사용
       _duration = 1800;
       _remainingTime = 1800;

@@ -29,8 +29,11 @@ class ThemeProvider with ChangeNotifier {
       }
       _initializationCompleter.complete();
     } catch (e) {
-      _initializationCompleter.completeError(e);
-      rethrow;
+      debugPrint('Theme initialization failed: $e');
+      // 기본값으로 복구
+      _themeMode = ThemeMode.system;
+      notifyListeners();
+      _initializationCompleter.complete(); // 에러가 있어도 초기화 완료로 처리
     }
   }
 

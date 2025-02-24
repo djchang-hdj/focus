@@ -20,19 +20,33 @@ void main() async {
     SemanticsBinding.instance.ensureSemantics();
   }
 
+  // Provider 초기화 및 에러 처리
+  final themeProvider = ThemeProvider();
+  final taskProvider = TaskProvider();
+  final timerProvider = TimerProvider();
+
+  try {
+    // Provider들의 초기화 완료 대기
+    await Future.wait([
+      themeProvider.initialized,
+      taskProvider.initialized,
+    ]);
+  } catch (e) {
+    debugPrint('Provider initialization error: $e');
+    // 에러가 발생해도 앱은 계속 실행
+  }
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => ThemeProvider(),
-          lazy: false,
+        ChangeNotifierProvider.value(
+          value: themeProvider,
         ),
-        ChangeNotifierProvider(
-          create: (_) => TaskProvider(),
-          lazy: false,
+        ChangeNotifierProvider.value(
+          value: taskProvider,
         ),
-        ChangeNotifierProvider(
-          create: (_) => TimerProvider(),
+        ChangeNotifierProvider.value(
+          value: timerProvider,
         ),
       ],
       child: const MyApp(),

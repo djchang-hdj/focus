@@ -49,7 +49,7 @@ class TaskProvider with ChangeNotifier {
             );
           });
         } catch (e) {
-          debugPrint('Error loading tasks: $e');
+          debugPrint('Error parsing tasks: $e');
           _tasks = {};
         }
       }
@@ -57,8 +57,12 @@ class TaskProvider with ChangeNotifier {
       notifyListeners();
       _initializationCompleter.complete();
     } catch (e) {
-      _initializationCompleter.completeError(e);
-      rethrow;
+      debugPrint('Task provider initialization failed: $e');
+      // 기본 상태로 복구
+      _tasks = {};
+      _isInitialized = true;
+      notifyListeners();
+      _initializationCompleter.complete();
     }
   }
 
