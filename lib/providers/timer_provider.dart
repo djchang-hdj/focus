@@ -10,6 +10,7 @@ class TimerRecord {
   final int actualDuration;
   final DateTime startTime;
   final DateTime endTime;
+  final bool isCompleted;
 
   TimerRecord({
     required this.title,
@@ -17,7 +18,10 @@ class TimerRecord {
     required this.actualDuration,
     required this.startTime,
     required this.endTime,
+    required this.isCompleted,
   });
+
+  double get progressRate => actualDuration / initialDuration;
 }
 
 class TimerProvider with ChangeNotifier {
@@ -183,6 +187,7 @@ class TimerProvider with ChangeNotifier {
       actualDuration: duration,
       startTime: _startTime!,
       endTime: endTime,
+      isCompleted: _status == TimerStatus.finished,
     ));
     notifyListeners();
   }

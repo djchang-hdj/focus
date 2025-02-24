@@ -260,39 +260,138 @@ class _FocusTimerState extends State<FocusTimer> {
                   return Card(
                     margin: const EdgeInsets.symmetric(
                       horizontal: 16.0,
-                      vertical: 8.0,
+                      vertical: 4.0,
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 헤더 섹션
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+                          child: Row(
                             children: [
                               Expanded(
-                                child: Text(
-                                  '제목: ${record.title}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        record.title,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: record.isCompleted
+                                            ? Theme.of(context)
+                                                .colorScheme
+                                                .primaryContainer
+                                            : Theme.of(context)
+                                                .colorScheme
+                                                .errorContainer,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        record.isCompleted ? '완료' : '중단',
+                                        style: TextStyle(
+                                          color: record.isCompleted
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .onPrimaryContainer
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .onErrorContainer,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.close),
+                                icon: const Icon(Icons.close, size: 18),
                                 onPressed: () =>
                                     timerProvider.deleteRecord(index),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
+                                style: IconButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
                               ),
                             ],
                           ),
-                          Text('설정 시간: ${record.initialDuration ~/ 60}분'),
-                          Text('총 진행 시간: ${record.actualDuration ~/ 60}분'),
-                          Text('시작 시간: ${_formatDateTime(record.startTime)}'),
-                          Text('종료 시간: ${_formatDateTime(record.endTime)}'),
-                        ],
-                      ),
+                        ),
+                        // 시간 정보 통합 섹션
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.timer_outlined,
+                                      size: 14,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${record.actualDuration ~/ 60}/${record.initialDuration ~/ 60}분',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Icon(
+                                      Icons.schedule,
+                                      size: 14,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${_formatTimeAmPm(record.startTime)} → ${_formatTimeAmPm(record.endTime)}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // 진행률 바
+                        ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(12),
+                            bottomRight: Radius.circular(12),
+                          ),
+                          child: LinearProgressIndicator(
+                            value: record.progressRate,
+                            backgroundColor: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              record.isCompleted
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.error,
+                            ),
+                            minHeight: 4,
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -353,11 +452,5 @@ class _FocusTimerState extends State<FocusTimer> {
     final hour = dt.hour > 12 ? dt.hour - 12 : dt.hour;
     final ampm = dt.hour >= 12 ? '오후' : '오전';
     return '$ampm ${hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-  }
-
-  // 기존의 포맷 함수는 기록을 위해 유지
-  String _formatDateTime(DateTime dt) {
-    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
-        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
   }
 }
