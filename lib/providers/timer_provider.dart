@@ -203,6 +203,11 @@ class TimerProvider with ChangeNotifier {
     setTitle(taskTitle);
   }
 
+  Future<void> clearAllRecords() async {
+    _records.clear();
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _timer?.cancel();

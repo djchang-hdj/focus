@@ -236,6 +236,16 @@ class AppHeader extends StatelessWidget {
                     ),
                   ),
                 ),
+                // 데이터 삭제 버튼
+                IconButton(
+                  onPressed: () => _showClearDataDialog(context),
+                  icon: Icon(
+                    Icons.delete_forever_rounded,
+                    color: theme.colorScheme.error,
+                  ),
+                  tooltip: '모든 데이터 삭제',
+                ),
+                const SizedBox(width: 8),
                 // 테마 토글 버튼
                 Consumer<ThemeProvider>(
                   builder: (context, themeProvider, _) => _buildThemeToggle(
@@ -327,28 +337,47 @@ class AppHeader extends StatelessWidget {
         ];
 
         final currentQuote = quotes[snapshot.data ?? 0];
+        final colorScheme = Theme.of(context).colorScheme;
 
         return Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.secondaryContainer,
-            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              colors: [
+                colorScheme.primary.withAlpha(38),
+                colorScheme.secondary.withAlpha(38),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: colorScheme.primary.withAlpha(51),
+              width: 1,
+            ),
           ),
           child: Row(
             children: [
-              Icon(
-                currentQuote.icon,
-                color: Theme.of(context).colorScheme.secondary,
-                size: 24,
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withAlpha(25),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  currentQuote.icon,
+                  color: colorScheme.primary,
+                  size: 24,
+                ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 20),
               Expanded(
                 child: Text(
                   currentQuote.text,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color:
-                            Theme.of(context).colorScheme.onSecondaryContainer,
-                        fontStyle: FontStyle.italic,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: colorScheme.onSurface,
+                        height: 1.3,
+                        letterSpacing: 0.3,
                         fontWeight: FontWeight.w500,
                       ),
                 ),
@@ -432,6 +461,55 @@ class AppHeader extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showClearDataDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: Icon(
+          Icons.warning_rounded,
+          color: Theme.of(dialogContext).colorScheme.error,
+          size: 32,
+        ),
+        title: const Text('모든 데이터 삭제'),
+        content: const Text(
+          '정말로 모든 데이터를 삭제하시겠습니까?\n'
+          '이 작업은 되돌릴 수 없으며, 모든 할 일과 타이머 기록이 영구적으로 삭제됩니다.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(dialogContext);
+              final navigator = Navigator.of(dialogContext);
+              final taskProvider = dialogContext.read<TaskProvider>();
+              final timerProvider = dialogContext.read<TimerProvider>();
+
+              // 모든 데이터 삭제
+              await taskProvider.clearAllTasks();
+              await timerProvider.clearAllRecords();
+
+              navigator.pop();
+              scaffoldMessenger.showSnackBar(
+                const SnackBar(
+                  content: Text('모든 데이터가 삭제되었습니다.'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(dialogContext).colorScheme.error,
+              foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+            ),
+            child: const Text('삭제'),
+          ),
+        ],
       ),
     );
   }

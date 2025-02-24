@@ -206,4 +206,10 @@ class TaskProvider with ChangeNotifier {
     _tasks[dateKey]?.removeWhere((task) => task.id == taskId);
     notifyListeners();
   }
+
+  Future<void> clearAllTasks() async {
+    _tasks.clear();
+    await _saveTasks();
+    notifyListeners();
+  }
 }
