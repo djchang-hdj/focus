@@ -89,8 +89,33 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _timerKey = GlobalKey();
+
+  void scrollToTimer() {
+    final context = _timerKey.currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,6 +123,7 @@ class HomeScreen extends StatelessWidget {
       body: LayoutBuilder(
         builder: (context, constraints) {
           return SingleChildScrollView(
+            controller: _scrollController,
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 minHeight: constraints.maxHeight,
@@ -115,11 +141,11 @@ class HomeScreen extends StatelessWidget {
                       children: [
                         const SizedBox(height: 16),
                         // 할 일 관리 섹션
-                        const TaskList(),
+                        TaskList(onTimerStart: scrollToTimer),
 
                         const SizedBox(height: 16),
                         // 포모도로 타이머 섹션
-                        const FocusTimer(),
+                        FocusTimer(key: _timerKey),
 
                         const SizedBox(height: 16),
                         // 금기사항 섹션

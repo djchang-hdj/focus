@@ -6,7 +6,12 @@ import '../models/task.dart';
 import '../providers/timer_provider.dart';
 
 class TaskList extends StatefulWidget {
-  const TaskList({super.key});
+  final VoidCallback onTimerStart;
+
+  const TaskList({
+    super.key,
+    required this.onTimerStart,
+  });
 
   @override
   State<TaskList> createState() => _TaskListState();
@@ -312,18 +317,7 @@ class _TaskListState extends State<TaskList> {
                 IconButton(
                   icon: const Icon(Icons.timer),
                   onPressed: () {
-                    final timerProvider = context.read<TimerProvider>();
-                    if (timerProvider.status == TimerStatus.running) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('이미 다른 작업이 진행 중입니다.'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    } else {
-                      timerProvider.setTitle(task.title);
-                      timerProvider.start();
-                    }
+                    startTimer(task.title);
                   },
                 ),
               IconButton(
@@ -337,6 +331,13 @@ class _TaskListState extends State<TaskList> {
         ),
       ),
     );
+  }
+
+  void startTimer(String taskTitle) {
+    final timerProvider = context.read<TimerProvider>();
+    timerProvider.setTitle(taskTitle);
+    timerProvider.start();
+    widget.onTimerStart();
   }
 
   Widget _buildAddTaskField(BuildContext context, TaskProvider taskProvider) {
