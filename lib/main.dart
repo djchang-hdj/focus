@@ -51,7 +51,7 @@ class MyApp extends StatelessWidget {
                 textScaler: TextScaler.linear(1.0),
               ),
               child: Center(
-                child: Container(
+                child: ConstrainedBox(
                   constraints: const BoxConstraints(
                     minWidth: 400,
                     maxWidth: 800,
