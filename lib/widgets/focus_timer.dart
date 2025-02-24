@@ -15,6 +15,13 @@ class FocusTimer extends StatelessWidget {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Text(
+              timerProvider.status == TimerStatus.running
+                  ? timerProvider.title
+                  : '집중타이머',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
             Stack(
               alignment: Alignment.center,
               children: [
@@ -42,6 +49,28 @@ class FocusTimer extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: TextField(
+                      decoration: const InputDecoration(
+                        hintText: '무엇에 집중하시나요?',
+                        border: OutlineInputBorder(),
+                      ),
+                      controller: TextEditingController(
+                          text: timerProvider.title == '무제'
+                              ? ''
+                              : timerProvider.title),
+                      onSubmitted: (value) {
+                        if (timerProvider.status == TimerStatus.running) {
+                          timerProvider.setTitle(value);
+                        }
+                      },
+                      onEditingComplete: () => FocusScope.of(context).unfocus(),
+                      textInputAction: TextInputAction.done,
+                    ),
+                  ),
+                ),
                 _buildTimerButton(
                   context,
                   timerProvider.status == TimerStatus.running ? '일시정지' : '시작',
@@ -55,9 +84,43 @@ class FocusTimer extends StatelessWidget {
                 const SizedBox(width: 20),
                 _buildTimerButton(
                   context,
-                  '리셋',
-                  timerProvider.reset,
-                  Icons.refresh,
+                  timerProvider.status == TimerStatus.running ? '중지' : '리셋',
+                  timerProvider.status == TimerStatus.running
+                      ? () {
+                          timerProvider.reset();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                '타이머가 중지되었습니다.',
+                                style: TextStyle(
+                                  color: Colors.grey[100],
+                                ),
+                              ),
+                              backgroundColor: Colors.black54,
+                              duration: const Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      : () {
+                          timerProvider.reset();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                '타이머가 30분으로 초기화되었습니다.',
+                                style: TextStyle(
+                                  color: Colors.grey[100],
+                                ),
+                              ),
+                              backgroundColor: Colors.black54,
+                              duration: const Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                  timerProvider.status == TimerStatus.running
+                      ? Icons.stop
+                      : Icons.refresh,
                 ),
               ],
             ),
@@ -90,29 +153,26 @@ class FocusTimer extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _buildTimePresetButton(context, timerProvider, 15),
+        _buildTimeAdjustButton(context, timerProvider, -5, '- 5분'),
         const SizedBox(width: 8),
-        _buildTimePresetButton(context, timerProvider, 25),
+        _buildTimeAdjustButton(context, timerProvider, 5, '+ 5분'),
         const SizedBox(width: 8),
-        _buildTimePresetButton(context, timerProvider, 45),
+        _buildTimeAdjustButton(context, timerProvider, 15, '+ 15분'),
       ],
     );
   }
 
-  Widget _buildTimePresetButton(
+  Widget _buildTimeAdjustButton(
     BuildContext context,
     TimerProvider timerProvider,
     int minutes,
+    String label,
   ) {
-    final isSelected = timerProvider.duration == minutes * 60;
-    return FilterChip(
-      label: Text('$minutes분'),
-      selected: isSelected,
-      onSelected: (bool selected) {
-        if (selected) {
-          timerProvider.setDuration(minutes);
-        }
+    return ElevatedButton(
+      onPressed: () {
+        timerProvider.adjustDuration(minutes);
       },
+      child: Text(label),
     );
   }
 }

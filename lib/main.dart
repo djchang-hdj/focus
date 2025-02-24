@@ -7,11 +7,20 @@ import 'package:focus/widgets/task_list.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:focus/providers/timer_provider.dart';
 import 'package:focus/widgets/focus_timer.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/rendering.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await initializeDateFormatting('ko_KR', null);
+
+  // Windows에서 접근성 에러 로그 비활성화
+  if (Platform.isWindows) {
+    SemanticsBinding.instance.ensureSemantics();
+  }
 
   runApp(
     MultiProvider(
