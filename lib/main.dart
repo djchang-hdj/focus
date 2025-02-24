@@ -150,31 +150,13 @@ class HomeScreen extends StatelessWidget {
                             '"막상 해보면 금방 끝나는 일이 많다."',
                             '"하루 물림이 열흘 간다."',
                           ];
-                          final authors = [
-                            '- 기억하자',
-                            '- 기억하자',
-                            '- 기억하자',
-                            '- 기억하자',
-                          ];
                           final index = snapshot.data ?? 0;
-                          return Column(
-                            children: [
-                              Text(
-                                quotes[index],
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                authors[index],
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
+                          return Text(
+                            quotes[index],
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontStyle: FontStyle.italic,
+                            ),
                           );
                         },
                       ),

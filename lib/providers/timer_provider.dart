@@ -46,17 +46,37 @@ class TimerProvider with ChangeNotifier {
   List<TimerRecord> get records => List.unmodifiable(_records);
 
   Future<void> _loadSettings() async {
-    _prefs = await SharedPreferences.getInstance();
-    _duration = _prefs.getInt(_settingsKey) ?? 1800;
-    _remainingTime = _duration;
-    notifyListeners();
+    try {
+      _prefs = await SharedPreferences.getInstance();
+      _duration = _prefs.getInt(_settingsKey) ?? 1800;
+      _remainingTime = _duration;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading timer settings: $e');
+      // 기본값 사용
+      _duration = 1800;
+      _remainingTime = 1800;
+      notifyListeners();
+    }
   }
 
-  Future<void> setDuration(int minutes) async {
-    _duration = minutes * 60;
-    _remainingTime = _duration;
-    await _prefs.setInt(_settingsKey, _duration);
-    notifyListeners();
+  Future<bool> setDuration(int minutes) async {
+    final oldDuration = _duration;
+    try {
+      _duration = minutes * 60;
+      _remainingTime = _duration;
+
+      await _prefs.setInt(_settingsKey, _duration);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error saving timer duration: $e');
+      // 저장 실패 시 이전 상태로 복원
+      _duration = oldDuration;
+      _remainingTime = oldDuration;
+      notifyListeners();
+      return false;
+    }
   }
 
   void start() {

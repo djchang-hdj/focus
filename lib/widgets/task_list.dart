@@ -337,8 +337,7 @@ class _TaskListState extends State<TaskList> {
               ),
               onSubmitted: (value) {
                 if (value.isNotEmpty) {
-                  taskProvider.addTask(value);
-                  _textController.clear();
+                  _addTask(context, taskProvider, value);
                 }
               },
             ),
@@ -354,5 +353,21 @@ class _TaskListState extends State<TaskList> {
         ],
       ),
     );
+  }
+
+  void _addTask(
+      BuildContext context, TaskProvider taskProvider, String value) async {
+    if (value.isNotEmpty) {
+      final success = await taskProvider.addTask(value);
+      if (!success && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('작업을 저장하는 중 오류가 발생했습니다.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      _textController.clear();
+    }
   }
 }

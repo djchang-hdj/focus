@@ -62,14 +62,20 @@ class TaskProvider with ChangeNotifier {
     }
   }
 
-  Future<void> _saveTasks() async {
-    final tasksJson = json.encode(_tasks.map((key, value) {
-      return MapEntry(key, value.map((task) => task.toJson()).toList());
-    }));
-    await _prefs.setString(_tasksKey, tasksJson);
+  Future<bool> _saveTasks() async {
+    try {
+      final tasksJson = json.encode(_tasks.map((key, value) {
+        return MapEntry(key, value.map((task) => task.toJson()).toList());
+      }));
+      await _prefs.setString(_tasksKey, tasksJson);
+      return true;
+    } catch (e) {
+      debugPrint('Error saving tasks: $e');
+      return false;
+    }
   }
 
-  void addTask(String title) {
+  Future<bool> addTask(String title) async {
     final dateKey = _getDateKey(_selectedDate);
     if (!_tasks.containsKey(dateKey)) {
       _tasks[dateKey] = [];
@@ -82,40 +88,76 @@ class TaskProvider with ChangeNotifier {
       date: _selectedDate,
     ));
 
-    _saveTasks();
+    final success = await _saveTasks();
+    if (!success) {
+      _tasks[dateKey]?.removeLast();
+      notifyListeners();
+      return false;
+    }
+
     notifyListeners();
+    return true;
   }
 
-  Future<void> toggleTask(String taskId) async {
+  Future<bool> toggleTask(String taskId) async {
     final dateKey = _getDateKey(_selectedDate);
     final taskIndex = _tasks[dateKey]?.indexWhere((t) => t.id == taskId) ?? -1;
 
     if (taskIndex != -1) {
-      _tasks[dateKey]![taskIndex].isCompleted =
-          !_tasks[dateKey]![taskIndex].isCompleted;
-      await _saveTasks();
+      final previousState = _tasks[dateKey]![taskIndex].isCompleted;
+      _tasks[dateKey]![taskIndex].isCompleted = !previousState;
+
+      final success = await _saveTasks();
+      if (!success) {
+        _tasks[dateKey]![taskIndex].isCompleted = previousState;
+        notifyListeners();
+        return false;
+      }
+
       notifyListeners();
+      return true;
     }
+    return false;
   }
 
-  Future<void> deleteTask(String taskId) async {
+  Future<bool> deleteTask(String taskId) async {
     final dateKey = _getDateKey(_selectedDate);
+    final taskToDelete =
+        _tasks[dateKey]?.firstWhere((task) => task.id == taskId);
+    if (taskToDelete == null) return false;
+
     _tasks[dateKey]?.removeWhere((task) => task.id == taskId);
-    await _saveTasks();
+
+    final success = await _saveTasks();
+    if (!success) {
+      _tasks[dateKey]?.add(taskToDelete);
+      notifyListeners();
+      return false;
+    }
+
     notifyListeners();
+    return true;
   }
 
-  Future<void> updateTask(String taskId, String newTitle) async {
+  Future<bool> updateTask(String taskId, String newTitle) async {
     final dateKey = _getDateKey(_selectedDate);
     final taskIndex = _tasks[dateKey]?.indexWhere((t) => t.id == taskId) ?? -1;
 
     if (taskIndex != -1) {
-      _tasks[dateKey]![taskIndex] = _tasks[dateKey]![taskIndex].copyWith(
-        title: newTitle,
-      );
-      await _saveTasks();
+      final oldTask = _tasks[dateKey]![taskIndex];
+      _tasks[dateKey]![taskIndex] = oldTask.copyWith(title: newTitle);
+
+      final success = await _saveTasks();
+      if (!success) {
+        _tasks[dateKey]![taskIndex] = oldTask;
+        notifyListeners();
+        return false;
+      }
+
       notifyListeners();
+      return true;
     }
+    return false;
   }
 
   double get completionRate {
