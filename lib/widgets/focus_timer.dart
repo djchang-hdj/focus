@@ -99,7 +99,9 @@ class _FocusTimerState extends State<FocusTimer> {
                     TweenAnimationBuilder<double>(
                       tween: Tween<double>(
                         begin: 0,
-                        end: timerProvider.progress,
+                        end: timerProvider.status == TimerStatus.finished
+                            ? 1.0
+                            : timerProvider.progress,
                       ),
                       duration: const Duration(milliseconds: 300),
                       builder: (context, value, _) {
@@ -111,7 +113,14 @@ class _FocusTimerState extends State<FocusTimer> {
                                 .colorScheme
                                 .surfaceContainerHighest,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).colorScheme.primary,
+                              timerProvider.status == TimerStatus.finished
+                                  ? Colors.green
+                                  : timerProvider.remainingTime <=
+                                          300 // 5분(300초) 이하
+                                      ? Theme.of(context)
+                                          .colorScheme
+                                          .error // 빨간색
+                                      : Theme.of(context).colorScheme.primary,
                             ),
                           ),
                         );
@@ -127,17 +136,17 @@ class _FocusTimerState extends State<FocusTimer> {
                               .displayMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 70, // 폰트 크기 약간 줄이기
+                                fontSize: 70,
                               ),
                         ),
-                        if (timerProvider.status == TimerStatus.running)
+                        if (timerProvider.status == TimerStatus.finished)
                           Text(
-                            '집중 중...',
+                            '완료!',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium
                                 ?.copyWith(
-                                  color: Theme.of(context).colorScheme.primary,
+                                  color: Colors.green,
                                   fontSize: 32,
                                 ),
                           ),

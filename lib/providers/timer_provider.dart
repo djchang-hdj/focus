@@ -122,22 +122,27 @@ class TimerProvider with ChangeNotifier {
     } else {
       timer.cancel();
       _status = TimerStatus.finished;
+      addRecord();
       notifyListeners();
     }
   }
 
   void adjustDuration(int minutes) {
+    // 최소 시간을 1분으로 설정
     final newDuration = duration + (minutes * 60);
     final newRemainingTime = remainingTime + (minutes * 60);
 
-    if (newDuration >= 0 && newRemainingTime >= 0) {
-      _duration = newDuration;
-      _remainingTime = newRemainingTime;
-      if (_status == TimerStatus.running) {
-        _initialDuration = _duration;
-      }
-      notifyListeners();
+    // 새로운 시간이 60초(1분) 미만이면 조정하지 않음
+    if (newDuration < 60 || newRemainingTime < 60) {
+      return;
     }
+
+    _duration = newDuration;
+    _remainingTime = newRemainingTime;
+    if (_status == TimerStatus.running) {
+      _initialDuration = _duration;
+    }
+    notifyListeners();
   }
 
   void setTitle(String newTitle) {
