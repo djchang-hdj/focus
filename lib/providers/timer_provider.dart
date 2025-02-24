@@ -85,13 +85,18 @@ class TimerProvider with ChangeNotifier {
   }
 
   void start() {
-    if (_status == TimerStatus.initial || _status == TimerStatus.paused) {
+    if (_status == TimerStatus.initial ||
+        _status == TimerStatus.paused ||
+        _status == TimerStatus.finished) {
       _status = TimerStatus.running;
       _timer = Timer.periodic(const Duration(seconds: 1), _tick);
       if (_title.trim().isEmpty) {
         _title = '무제';
       }
-      if (_startTime == null) {
+      if (_status == TimerStatus.finished) {
+        _startTime = DateTime.now();
+        _initialDuration = _duration;
+      } else if (_startTime == null) {
         _startTime = DateTime.now();
         _initialDuration = _duration;
       }

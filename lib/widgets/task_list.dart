@@ -335,6 +335,9 @@ class _TaskListState extends State<TaskList> {
 
   void startTimer(String taskTitle) {
     final timerProvider = context.read<TimerProvider>();
+    if (timerProvider.status == TimerStatus.finished) {
+      timerProvider.reset();
+    }
     timerProvider.setTitle(taskTitle);
     timerProvider.start();
     widget.onTimerStart();
