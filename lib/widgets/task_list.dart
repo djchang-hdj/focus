@@ -61,13 +61,27 @@ class _TaskListState extends State<TaskList> {
           Icon(
             Icons.task_alt,
             size: 64,
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.primary.withValues(
+                  alpha: (Theme.of(context).colorScheme.primary.a * 0.1)
+                      .toDouble(),
+                  red: Theme.of(context).colorScheme.primary.r.toDouble(),
+                  green: Theme.of(context).colorScheme.primary.g.toDouble(),
+                  blue: Theme.of(context).colorScheme.primary.b.toDouble(),
+                ),
           ),
           const SizedBox(height: 16),
           Text(
             '할 일이 없습니다',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                  color: Theme.of(context).colorScheme.primary.withValues(
+                        alpha: (Theme.of(context).colorScheme.primary.a * 0.1)
+                            .toDouble(),
+                        red: Theme.of(context).colorScheme.primary.r.toDouble(),
+                        green:
+                            Theme.of(context).colorScheme.primary.g.toDouble(),
+                        blue:
+                            Theme.of(context).colorScheme.primary.b.toDouble(),
+                      ),
                 ),
           ),
           const SizedBox(height: 8),
@@ -258,7 +272,27 @@ class _TaskListState extends State<TaskList> {
                               .textTheme
                               .bodyMedium
                               ?.color
-                              ?.withOpacity(0.5)
+                              ?.withValues(
+                                alpha:
+                                    (Theme.of(context).colorScheme.primary.a *
+                                            0.1)
+                                        .toDouble(),
+                                red: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .r
+                                    .toDouble(),
+                                green: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .g
+                                    .toDouble(),
+                                blue: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .b
+                                    .toDouble(),
+                              )
                           : null,
                     ),
                   ),
@@ -278,11 +312,6 @@ class _TaskListState extends State<TaskList> {
         ),
       ),
     );
-  }
-
-  // 날짜 키 생성 헬퍼 메서드 추가
-  String _getDateKey(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
   Widget _buildAddTaskField(BuildContext context, TaskProvider taskProvider) {

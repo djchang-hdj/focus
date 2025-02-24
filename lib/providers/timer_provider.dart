@@ -134,7 +134,7 @@ class TimerProvider with ChangeNotifier {
     return '''
 제목: $_title
 설정 시간: ${_initialDuration ~/ 60}분
-총 진행 시간: ${minutes}분
+총 진행 시간: $minutes분
 시작 시간: ${_formatDateTime(_startTime!)}
 종료 시간: ${_formatDateTime(endTime)}
 ''';

@@ -160,22 +160,4 @@ class TaskProvider with ChangeNotifier {
     _tasks[dateKey]?.removeWhere((task) => task.id == taskId);
     notifyListeners();
   }
-
-  void _addDefaultTasks(TaskProvider taskProvider) {
-    final defaultTasks = [
-      '이메일 플래그 지금 정리하라!',
-      '과제 지금 관리하라!',
-      '오늘 할 일 목록 당장 점검하라!',
-      '책 30분 이상 읽어라!',
-      '1시간 이상 집중 공부하라!',
-      '오늘의 일기 반드시 작성하라!',
-    ];
-
-    // 각 태스크를 개별적으로 추가하되, 약간의 딜레이를 줌
-    for (var i = 0; i < defaultTasks.length; i++) {
-      Future.delayed(Duration(milliseconds: i * 10), () {
-        taskProvider.addTask(defaultTasks[i]);
-      });
-    }
-  }
 }
