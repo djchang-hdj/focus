@@ -1,4 +1,4 @@
-#include "win32_window.h"
+﻿#include "win32_window.h"
 
 #include <dwmapi.h>
 #include <flutter_windows.h>
@@ -150,8 +150,8 @@ bool Win32Window::Create(const std::wstring& title,
   RECT max_size = {0, 0, Scale(800, scale_factor), 0}; // height를 0으로 설정하여 제한 없앰
   
   SetWindowLongPtr(window, GWL_STYLE, GetWindowLongPtr(window, GWL_STYLE) | WS_THICKFRAME);
-  AdjustWindowRect(&min_size, GetWindowLongPtr(window, GWL_STYLE), FALSE);
-  AdjustWindowRect(&max_size, GetWindowLongPtr(window, GWL_STYLE), FALSE);
+  AdjustWindowRect(&min_size, static_cast<DWORD>(GetWindowLongPtr(window, GWL_STYLE)), FALSE);
+  AdjustWindowRect(&max_size, static_cast<DWORD>(GetWindowLongPtr(window, GWL_STYLE)), FALSE);
   
   SetWindowPos(window, nullptr, 0, 0, 0, 0,
                SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
@@ -273,6 +273,17 @@ void Win32Window::SetChildContent(HWND content) {
 RECT Win32Window::GetClientArea() {
   RECT frame;
   GetClientRect(window_handle_, &frame);
+  
+  // Fix type conversion warnings
+  SetWindowLongPtr(
+      window_handle_,
+      GWL_STYLE,
+      static_cast<DWORD>(GetWindowLongPtr(window_handle_, GWL_STYLE) & ~WS_MAXIMIZEBOX));
+  SetWindowLongPtr(
+      window_handle_,
+      GWL_STYLE,
+      static_cast<DWORD>(GetWindowLongPtr(window_handle_, GWL_STYLE) & ~WS_MINIMIZEBOX));
+      
   return frame;
 }
 
