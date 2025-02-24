@@ -2,25 +2,54 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/timer_provider.dart';
 
-class FocusTimer extends StatelessWidget {
+class FocusTimer extends StatefulWidget {
   const FocusTimer({super.key});
+
+  @override
+  State<FocusTimer> createState() => _FocusTimerState();
+}
+
+class _FocusTimerState extends State<FocusTimer> {
+  final TextEditingController _titleController = TextEditingController();
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<TimerProvider>(
       builder: (context, timerProvider, child) {
+        // TextEditingController 초기값 설정
+        if (_titleController.text.isEmpty && timerProvider.title != '무제') {
+          _titleController.text = timerProvider.title;
+        }
+
         final minutes = timerProvider.remainingTime ~/ 60;
         final seconds = timerProvider.remainingTime % 60;
 
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              timerProvider.status == TimerStatus.running
-                  ? timerProvider.title
-                  : '집중타이머',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            if ((timerProvider.status == TimerStatus.running ||
+                    timerProvider.status == TimerStatus.paused) &&
+                timerProvider.startTime != null)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('제목: ${timerProvider.title}'),
+                      Text('설정 시간: ${timerProvider.initialDuration ~/ 60}분'),
+                      Text(
+                          '시작 시간: ${_formatTimeAmPm(timerProvider.startTime!)}'),
+                    ],
+                  ),
+                ),
+              ),
             const SizedBox(height: 16),
             Stack(
               alignment: Alignment.center,
@@ -57,14 +86,9 @@ class FocusTimer extends StatelessWidget {
                         hintText: '무엇에 집중하시나요?',
                         border: OutlineInputBorder(),
                       ),
-                      controller: TextEditingController(
-                          text: timerProvider.title == '무제'
-                              ? ''
-                              : timerProvider.title),
+                      controller: _titleController,
                       onSubmitted: (value) {
-                        if (timerProvider.status == TimerStatus.running) {
-                          timerProvider.setTitle(value);
-                        }
+                        timerProvider.setTitle(value);
                       },
                       onEditingComplete: () => FocusScope.of(context).unfocus(),
                       textInputAction: TextInputAction.done,
@@ -76,7 +100,10 @@ class FocusTimer extends StatelessWidget {
                   timerProvider.status == TimerStatus.running ? '일시정지' : '시작',
                   timerProvider.status == TimerStatus.running
                       ? timerProvider.pause
-                      : timerProvider.start,
+                      : () {
+                          timerProvider.setTitle(_titleController.text);
+                          timerProvider.start();
+                        },
                   timerProvider.status == TimerStatus.running
                       ? Icons.pause
                       : Icons.play_arrow,
@@ -87,23 +114,27 @@ class FocusTimer extends StatelessWidget {
                   timerProvider.status == TimerStatus.running ? '중지' : '리셋',
                   timerProvider.status == TimerStatus.running
                       ? () {
+                          final log = timerProvider.getTimerLog();
                           timerProvider.reset();
+                          _titleController.clear();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                '타이머가 중지되었습니다.',
+                                log,
                                 style: TextStyle(
                                   color: Colors.grey[100],
+                                  fontFamily: 'monospace',
                                 ),
                               ),
-                              backgroundColor: Colors.black54,
-                              duration: const Duration(seconds: 2),
+                              backgroundColor: Colors.black87,
+                              duration: const Duration(seconds: 5),
                               behavior: SnackBarBehavior.floating,
                             ),
                           );
                         }
                       : () {
                           timerProvider.reset();
+                          _titleController.clear();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
@@ -126,6 +157,65 @@ class FocusTimer extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             _buildDurationSelector(context, timerProvider),
+
+            const SizedBox(height: 20),
+            // 타이머 기록 리스트
+            if (timerProvider.records.isNotEmpty) ...[
+              const Divider(),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  '타이머 기록',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: timerProvider.records.length,
+                itemBuilder: (context, index) {
+                  final record = timerProvider.records[index];
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '제목: ${record.title}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close),
+                                onPressed: () =>
+                                    timerProvider.deleteRecord(index),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                            ],
+                          ),
+                          Text('설정 시간: ${record.initialDuration ~/ 60}분'),
+                          Text('총 진행 시간: ${record.actualDuration ~/ 60}분'),
+                          Text('시작 시간: ${_formatDateTime(record.startTime)}'),
+                          Text('종료 시간: ${_formatDateTime(record.endTime)}'),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
           ],
         );
       },
@@ -174,5 +264,18 @@ class FocusTimer extends StatelessWidget {
       },
       child: Text(label),
     );
+  }
+
+  // 현재 진행중인 타이머의 시작 시간을 위한 포맷 함수
+  String _formatTimeAmPm(DateTime dt) {
+    final hour = dt.hour > 12 ? dt.hour - 12 : dt.hour;
+    final ampm = dt.hour >= 12 ? '오후' : '오전';
+    return '$ampm ${hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  // 기존의 포맷 함수는 기록을 위해 유지
+  String _formatDateTime(DateTime dt) {
+    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
+        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
   }
 }
