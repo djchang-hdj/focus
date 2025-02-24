@@ -95,19 +95,6 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('생각하고 말하자'),
-        actions: [
-          IconButton(
-            icon: Icon(Theme.of(context).brightness == Brightness.light
-                ? Icons.dark_mode
-                : Icons.light_mode),
-            onPressed: () {
-              context.read<ThemeProvider>().toggleTheme();
-            },
-          ),
-        ],
-      ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           return SingleChildScrollView(
@@ -115,83 +102,76 @@ class HomeScreen extends StatelessWidget {
               constraints: BoxConstraints(
                 minHeight: constraints.maxHeight,
               ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 새로운 헤더 위젯
+                  const AppHeader(),
 
-                    const SizedBox(height: 16),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 400),
-                      child: Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            children: [
-                              StreamBuilder<int>(
-                                stream: Stream.periodic(
-                                    const Duration(seconds: 15), (i) => i % 4),
-                                builder: (context, snapshot) {
-                                  final quotes = [
-                                    '"미래의 나에게 기대를 걸지 않는다."',
-                                    '"한 덩어리로 포장하지 말고, 과정을 분해하고 또 분해한다."',
-                                    '"막상 해보면 금방 끝나는 일이 많다."',
-                                    '"하루 물림이 열흘 간다."',
-                                  ];
-                                  final index = snapshot.data ?? 0;
-                                  return Text(
-                                    quotes[index],
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontStyle: FontStyle.italic,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 16),
+                        // 할 일 관리 섹션
+                        const TaskList(),
+
+                        const SizedBox(height: 16),
+                        // 포모도로 타이머 섹션
+                        const FocusTimer(),
+
+                        const SizedBox(height: 16),
+                        // 금기사항 섹션
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.warning_amber_rounded,
+                                      color:
+                                          Theme.of(context).colorScheme.error,
                                     ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // 할 일 관리 섹션
-                    const TaskList(),
-
-                    const SizedBox(height: 16),
-                    // 포모도로 타이머 섹션
-                    const FocusTimer(),
-
-                    const SizedBox(height: 16),
-
-                    // 금기사항 섹션
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 400),
-                      child: Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text(
-                                '집중을 유지하기 위해',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '집중을 유지하기 위해',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge,
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              SizedBox(height: 8),
-                              Text('• 유튜브, 넷플릭스, OTT 안 보기'),
-                              Text('• 커뮤니티 들어가지 않기'),
-                              Text('• 불필요한 웹서핑 하지 말기'),
-                            ],
+                                const SizedBox(height: 16),
+                                _buildProhibitedItem(
+                                  context,
+                                  Icons.play_circle_outline,
+                                  '유튜브, 넷플릭스, OTT 안 보기',
+                                ),
+                                const SizedBox(height: 8),
+                                _buildProhibitedItem(
+                                  context,
+                                  Icons.forum_outlined,
+                                  '커뮤니티 들어가지 않기',
+                                ),
+                                const SizedBox(height: 8),
+                                _buildProhibitedItem(
+                                  context,
+                                  Icons.public_outlined,
+                                  '불필요한 웹서핑 하지 말기',
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 32),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );
@@ -199,4 +179,267 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildProhibitedItem(
+    BuildContext context,
+    IconData icon,
+    String text,
+  ) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class AppHeader extends StatelessWidget {
+  const AppHeader({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isPlatformDark = theme.brightness == Brightness.dark;
+
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surface,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 헤더 상단 영역
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // 로고 및 타이틀
+                Expanded(
+                  child: Text(
+                    '생각하고 말하자',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                // 테마 토글 버튼
+                Consumer<ThemeProvider>(
+                  builder: (context, themeProvider, _) => _buildThemeToggle(
+                    context,
+                    isPlatformDark,
+                    themeProvider,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // 동기부여 문구 섹션
+            _buildMotivationalQuote(context),
+
+            const SizedBox(height: 24),
+
+            // 오늘의 통계
+            _buildTodayStats(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeToggle(
+    BuildContext context,
+    bool isDark,
+    ThemeProvider themeProvider,
+  ) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: themeProvider.toggleTheme,
+        borderRadius: BorderRadius.circular(50),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(50),
+          ),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return RotationTransition(
+                turns: animation,
+                child: FadeTransition(
+                  opacity: animation,
+                  child: child,
+                ),
+              );
+            },
+            child: Icon(
+              isDark ? Icons.dark_mode : Icons.light_mode,
+              key: ValueKey<bool>(isDark),
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMotivationalQuote(BuildContext context) {
+    return StreamBuilder<int>(
+      stream: Stream.periodic(const Duration(seconds: 10), (i) => i % 4),
+      builder: (context, snapshot) {
+        final quotes = [
+          QuoteData(
+            text: "미래의 나에게 기대를 걸지 않는다",
+            icon: Icons.update_disabled_outlined,
+          ),
+          QuoteData(
+            text: "덩어리로 하지 말고 과정을 분해하라",
+            icon: Icons.format_list_numbered_outlined,
+          ),
+          QuoteData(
+            text: "막상 해보면 금방 끝나는 일이 많다",
+            icon: Icons.bolt_outlined,
+          ),
+          QuoteData(
+            text: "하루 물림이 열흘 간다",
+            icon: Icons.calendar_today_outlined,
+          ),
+        ];
+
+        final currentQuote = quotes[snapshot.data ?? 0];
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.secondaryContainer,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                currentQuote.icon,
+                color: Theme.of(context).colorScheme.secondary,
+                size: 24,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  currentQuote.text,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color:
+                            Theme.of(context).colorScheme.onSecondaryContainer,
+                        fontStyle: FontStyle.italic,
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTodayStats(BuildContext context) {
+    return Consumer<TaskProvider>(
+      builder: (context, taskProvider, _) {
+        final completionRate =
+            (taskProvider.completionRate * 100).toStringAsFixed(1);
+        final totalTasks = taskProvider.currentTasks.length;
+        final completedTasks =
+            taskProvider.currentTasks.where((task) => task.isCompleted).length;
+
+        return Row(
+          children: [
+            _buildStatCard(
+              context,
+              '오늘의 달성률',
+              '$completionRate%',
+              Icons.analytics_outlined,
+            ),
+            const SizedBox(width: 16),
+            _buildStatCard(
+              context,
+              '완료한 일',
+              '$completedTasks / $totalTasks',
+              Icons.task_alt_outlined,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildStatCard(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+  ) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class QuoteData {
+  final String text;
+  final IconData icon;
+
+  QuoteData({required this.text, required this.icon});
 }
