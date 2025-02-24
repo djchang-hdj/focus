@@ -105,6 +105,19 @@ class TaskProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateTask(String taskId, String newTitle) async {
+    final dateKey = _getDateKey(_selectedDate);
+    final taskIndex = _tasks[dateKey]?.indexWhere((t) => t.id == taskId) ?? -1;
+
+    if (taskIndex != -1) {
+      _tasks[dateKey]![taskIndex] = _tasks[dateKey]![taskIndex].copyWith(
+        title: newTitle,
+      );
+      await _saveTasks();
+      notifyListeners();
+    }
+  }
+
   double get completionRate {
     final tasks = currentTasks;
     if (tasks.isEmpty) return 0.0;

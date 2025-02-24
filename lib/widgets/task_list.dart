@@ -198,7 +198,7 @@ class _TaskListState extends State<TaskList> {
   Widget _buildTaskItem(
       BuildContext context, Task task, TaskProvider taskProvider) {
     return Dismissible(
-      key: ValueKey(task.id), // UUID만으로 충분합니다
+      key: ValueKey(task.id),
       background: Container(
         color: Colors.red.shade300,
         alignment: Alignment.centerRight,
@@ -224,18 +224,44 @@ class _TaskListState extends State<TaskList> {
               taskProvider.toggleTask(task.id);
             },
           ),
-          title: Text(
-            task.title,
-            style: TextStyle(
-              decoration: task.isCompleted ? TextDecoration.lineThrough : null,
-              color: task.isCompleted
-                  ? Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.color
-                      ?.withOpacity(0.5)
-                  : null,
-            ),
+          title: GestureDetector(
+            onDoubleTap: () {
+              setState(() {
+                task.isEditing = true;
+              });
+            },
+            child: task.isEditing
+                ? TextField(
+                    controller: TextEditingController(text: task.title),
+                    autofocus: true,
+                    onSubmitted: (newValue) async {
+                      if (newValue.isNotEmpty) {
+                        await taskProvider.updateTask(task.id, newValue);
+                        setState(() {
+                          task.isEditing = false;
+                        });
+                      }
+                    },
+                    onEditingComplete: () {
+                      setState(() {
+                        task.isEditing = false;
+                      });
+                    },
+                  )
+                : Text(
+                    task.title,
+                    style: TextStyle(
+                      decoration:
+                          task.isCompleted ? TextDecoration.lineThrough : null,
+                      color: task.isCompleted
+                          ? Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.color
+                              ?.withOpacity(0.5)
+                          : null,
+                    ),
+                  ),
           ),
           trailing: IconButton(
             icon: const Icon(Icons.delete_outline),

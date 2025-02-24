@@ -3,12 +3,14 @@ class Task {
   final String title;
   bool isCompleted;
   final DateTime date;
+  bool isEditing;
 
   Task({
     required this.id,
     required this.title,
     this.isCompleted = false,
     required this.date,
+    this.isEditing = false,
   });
 
   Task copyWith({
@@ -16,12 +18,14 @@ class Task {
     String? title,
     bool? isCompleted,
     DateTime? date,
+    bool? isEditing,
   }) {
     return Task(
       id: id ?? this.id,
       title: title ?? this.title,
       isCompleted: isCompleted ?? this.isCompleted,
       date: date ?? this.date,
+      isEditing: isEditing ?? this.isEditing,
     );
   }
 
@@ -31,15 +35,17 @@ class Task {
       'title': title,
       'isCompleted': isCompleted,
       'date': date.toIso8601String(),
+      'isEditing': isEditing,
     };
   }
 
   factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
-      id: json['id'],
-      title: json['title'],
-      isCompleted: json['isCompleted'],
+      id: json['id'] as String,
+      title: json['title'] as String,
+      isCompleted: json['isCompleted'] ?? false,
       date: DateTime.parse(json['date']),
+      isEditing: json['isEditing'] ?? false,
     );
   }
 }
