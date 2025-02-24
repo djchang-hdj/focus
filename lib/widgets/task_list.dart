@@ -115,7 +115,6 @@ class _TaskListState extends State<TaskList> {
     return Container(
       padding: const EdgeInsets.all(16.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
             icon: const Icon(Icons.chevron_left),

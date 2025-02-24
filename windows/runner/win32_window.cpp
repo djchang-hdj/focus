@@ -144,6 +144,27 @@ bool Win32Window::Create(const std::wstring& title,
     return false;
   }
 
+  // 최소 크기 설정
+  RECT min_size = {0, 0, Scale(400, scale_factor), Scale(600, scale_factor)};
+  // 최대 크기 설정 (옵션)
+  RECT max_size = {0, 0, Scale(800, scale_factor), Scale(1200, scale_factor)};
+  
+  SetWindowLongPtr(window, GWL_STYLE, GetWindowLongPtr(window, GWL_STYLE) | WS_THICKFRAME);
+  AdjustWindowRect(&min_size, GetWindowLongPtr(window, GWL_STYLE), FALSE);
+  AdjustWindowRect(&max_size, GetWindowLongPtr(window, GWL_STYLE), FALSE);
+  
+  SetWindowPos(window, nullptr, 0, 0, 0, 0,
+               SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+  
+  MINMAXINFO mmi;
+  mmi.ptMinTrackSize.x = min_size.right - min_size.left;
+  mmi.ptMinTrackSize.y = min_size.bottom - min_size.top;
+  mmi.ptMaxTrackSize.x = max_size.right - max_size.left;
+  mmi.ptMaxTrackSize.y = max_size.bottom - max_size.top;
+  
+  SetWindowLongPtr(window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+  SendMessage(window, WM_GETMINMAXINFO, 0, reinterpret_cast<LPARAM>(&mmi));
+
   UpdateTheme(window);
 
   return OnCreate();

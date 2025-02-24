@@ -45,6 +45,22 @@ class MyApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.themeMode,
+          builder: (context, child) {
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaleFactor: 1.0,
+              ),
+              child: Center(
+                child: Container(
+                  constraints: const BoxConstraints(
+                    minWidth: 400,
+                    maxWidth: 800,
+                  ),
+                  child: child!,
+                ),
+              ),
+            );
+          },
           home: const HomeScreen(),
         );
       },

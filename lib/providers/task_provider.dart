@@ -118,19 +118,19 @@ class TaskProvider with ChangeNotifier {
 
     _tasks[dateKey]!.addAll([
       Task(
-        id: DateTime.now().toString() + '1',
+        id: '${DateTime.now()}1',
         title: '운동하기',
         isCompleted: false,
         date: _selectedDate,
       ),
       Task(
-        id: DateTime.now().toString() + '2',
+        id: '${DateTime.now()}2',
         title: '독서하기',
         isCompleted: false,
         date: _selectedDate,
       ),
       Task(
-        id: DateTime.now().toString() + '3',
+        id: '${DateTime.now()}3',
         title: '코딩하기',
         isCompleted: false,
         date: _selectedDate,
