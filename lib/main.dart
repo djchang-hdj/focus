@@ -26,10 +26,22 @@ void main() async {
   final timerProvider = TimerProvider();
 
   try {
-    // Provider들의 초기화 완료 대기
+    // 타임아웃을 추가하여 무한 대기 방지
     await Future.wait([
-      themeProvider.initialized,
-      taskProvider.initialized,
+      themeProvider.initialized.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          debugPrint('Theme initialization timed out');
+          return null;
+        },
+      ),
+      taskProvider.initialized.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          debugPrint('Task initialization timed out');
+          return null;
+        },
+      ),
     ]);
   } catch (e) {
     debugPrint('Provider initialization error: $e');
