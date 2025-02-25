@@ -224,13 +224,17 @@ class TaskProvider with ChangeNotifier {
 
   void reorderTask(int oldIndex, int newIndex) {
     final dateKey = _getDateKey(_selectedDate);
-    if (!_tasks.containsKey(dateKey)) return;
+    if (!_tasks.containsKey(dateKey)) {
+      return;
+    }
 
     final tasks = _tasks[dateKey]!;
     if (oldIndex < 0 ||
         newIndex < 0 ||
         oldIndex >= tasks.length ||
-        newIndex >= tasks.length) return;
+        newIndex >= tasks.length) {
+      return;
+    }
 
     final task = tasks.removeAt(oldIndex);
     tasks.insert(newIndex, task);
