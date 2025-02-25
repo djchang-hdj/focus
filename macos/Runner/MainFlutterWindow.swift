@@ -11,6 +11,7 @@ class MainFlutterWindow: NSWindow {
     self.styleMask.insert(.fullSizeContentView)
     self.titlebarAppearsTransparent = true
     self.isMovableByWindowBackground = true
+    self.titleVisibility = .hidden  // 앱 제목 숨기기
     
     // 툴바 설정
     let toolbar = NSToolbar(identifier: NSToolbar.Identifier("MainToolbar"))

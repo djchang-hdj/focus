@@ -108,6 +108,7 @@ class _MacosScaffoldState extends State<MacosScaffold> {
     final context = _timerKey.currentContext;
     if (context != null) {
       Future.delayed(const Duration(milliseconds: 100), () {
+        if (!context.mounted) return;
         Scrollable.ensureVisible(
           context,
           duration: const Duration(milliseconds: 500),
