@@ -311,7 +311,7 @@ class AppHeader extends StatelessWidget {
                 // 로고 및 타이틀
                 Expanded(
                   child: Text(
-                    '생각하고 말하자',
+                    '도망가지 마!',
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onSurface,
