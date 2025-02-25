@@ -233,7 +233,9 @@ class _FocusTimerState extends State<FocusTimer> {
           timerProvider.status == TimerStatus.running ? '중지' : '리셋',
           timerProvider.status == TimerStatus.running
               ? () {
+                  timerProvider.pause();
                   final log = timerProvider.getTimerLog();
+                  timerProvider.addRecord();
                   timerProvider.reset();
                   _titleController.clear();
                   _showSnackBar(context, log, isLog: true);

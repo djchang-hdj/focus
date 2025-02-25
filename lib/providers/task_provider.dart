@@ -221,4 +221,29 @@ class TaskProvider with ChangeNotifier {
     await _saveTasks();
     notifyListeners();
   }
+
+  void reorderTask(int oldIndex, int newIndex) {
+    final dateKey = _getDateKey(_selectedDate);
+    if (!_tasks.containsKey(dateKey)) return;
+
+    final tasks = _tasks[dateKey]!;
+    if (oldIndex < 0 ||
+        newIndex < 0 ||
+        oldIndex >= tasks.length ||
+        newIndex >= tasks.length) return;
+
+    final task = tasks.removeAt(oldIndex);
+    tasks.insert(newIndex, task);
+
+    // 완료된 항목과 미완료 항목을 각각의 그룹으로 유지
+    tasks.sort((a, b) {
+      if (a.isCompleted != b.isCompleted) {
+        return a.isCompleted ? -1 : 1;
+      }
+      return 0;
+    });
+
+    _saveTasks(); // 변경된 순서를 저장
+    notifyListeners();
+  }
 }

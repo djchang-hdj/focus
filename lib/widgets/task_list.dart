@@ -4,6 +4,7 @@ import 'package:intl/intl.dart'; // 날짜 형식을 위해 추가
 import '../providers/task_provider.dart';
 import '../models/task.dart';
 import '../providers/timer_provider.dart';
+import 'dart:ui' show lerpDouble;
 
 class TaskList extends StatefulWidget {
   final VoidCallback onTimerStart;
@@ -32,7 +33,16 @@ class _TaskListState extends State<TaskList> {
   Widget build(BuildContext context) {
     return Consumer<TaskProvider>(
       builder: (context, taskProvider, child) {
-        final tasks = taskProvider.currentTasks;
+        // tasks를 완료 여부에 따라 정렬
+        final tasks = List<Task>.from(taskProvider.currentTasks)
+          ..sort((a, b) {
+            // 먼저 완료 여부로 정렬 (완료된 항목이 위로)
+            if (a.isCompleted != b.isCompleted) {
+              return a.isCompleted ? -1 : 1;
+            }
+            // 완료 여부가 같다면 기존 순서 유지
+            return 0;
+          });
 
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -43,12 +53,57 @@ class _TaskListState extends State<TaskList> {
               _buildEmptyState(context, taskProvider)
             else
               Flexible(
-                child: ListView.builder(
+                child: ReorderableListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
+                  buildDefaultDragHandles: false,
                   itemCount: tasks.length,
+                  onReorder: (oldIndex, newIndex) {
+                    if (oldIndex < newIndex) {
+                      newIndex -= 1;
+                    }
+                    final movedTask = tasks[oldIndex];
+                    final targetTask = tasks[newIndex];
+
+                    // 같은 완료 상태 그룹 내에서만 이동 허용
+                    if (movedTask.isCompleted == targetTask.isCompleted) {
+                      taskProvider.reorderTask(oldIndex, newIndex);
+                    } else {
+                      // 다른 그룹으로 이동 시도하면 원래 위치로 돌아가도록 setState
+                      setState(() {});
+                    }
+                  },
                   itemBuilder: (context, index) {
-                    return _buildTaskItem(context, tasks[index], taskProvider);
+                    final task = tasks[index];
+                    return ReorderableDragStartListener(
+                      key: ValueKey(task.id),
+                      index: index,
+                      child: _buildTaskItem(context, task, taskProvider),
+                    );
+                  },
+                  proxyDecorator: (child, index, animation) {
+                    return AnimatedBuilder(
+                      animation: animation,
+                      builder: (context, child) {
+                        final double elevation =
+                            lerpDouble(1, 6, animation.value) ?? 0;
+                        return Material(
+                          elevation: elevation,
+                          color: Colors.transparent,
+                          shadowColor: Theme.of(context).shadowColor.withValues(
+                                alpha: (Theme.of(context).shadowColor.a * 0.2)
+                                    .toDouble(),
+                                red: Theme.of(context).shadowColor.r.toDouble(),
+                                green:
+                                    Theme.of(context).shadowColor.g.toDouble(),
+                                blue:
+                                    Theme.of(context).shadowColor.b.toDouble(),
+                              ),
+                          child: child,
+                        );
+                      },
+                      child: child,
+                    );
                   },
                 ),
               ),
@@ -217,123 +272,105 @@ class _TaskListState extends State<TaskList> {
 
   Widget _buildTaskItem(
       BuildContext context, Task task, TaskProvider taskProvider) {
-    return Dismissible(
+    return Card(
       key: ValueKey(task.id),
-      background: Container(
-        color: Colors.red.shade300,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.delete_outline, color: Colors.white),
-      ),
-      direction: DismissDirection.endToStart,
-      onDismissed: (direction) {
-        taskProvider.deleteTask(task.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('할 일이 삭제되었습니다'),
-            duration: Duration(seconds: 2),
+      margin: const EdgeInsets.symmetric(vertical: 4.0),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16.0,
+          vertical: 4.8,
+        ),
+        leading: Checkbox(
+          value: task.isCompleted,
+          onChanged: (bool? value) {
+            taskProvider.toggleTask(task.id);
+          },
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(4),
           ),
-        );
-      },
-      child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 4.0),
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16.0,
-            vertical: 4.8, // 60% of the original 8.0
+          side: BorderSide(
+            color: Theme.of(context).colorScheme.outline.withAlpha(76),
           ),
-          leading: Checkbox(
-            value: task.isCompleted,
-            onChanged: (bool? value) {
-              taskProvider.toggleTask(task.id);
-            },
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),
-            ),
-            side: BorderSide(
-              color: Theme.of(context).colorScheme.outline.withAlpha(76),
-            ),
-          ),
-          title: GestureDetector(
-            onDoubleTap: () {
-              setState(() {
-                task.isEditing = true;
-              });
-            },
-            child: task.isEditing
-                ? TextField(
-                    controller: TextEditingController(text: task.title),
-                    autofocus: true,
-                    onSubmitted: (newValue) async {
-                      if (newValue.isNotEmpty) {
-                        await taskProvider.updateTask(task.id, newValue);
-                        setState(() {
-                          task.isEditing = false;
-                        });
-                      }
-                    },
-                    onEditingComplete: () {
+        ),
+        title: GestureDetector(
+          onDoubleTap: () {
+            setState(() {
+              task.isEditing = true;
+            });
+          },
+          child: task.isEditing
+              ? TextField(
+                  controller: TextEditingController(text: task.title),
+                  autofocus: true,
+                  onSubmitted: (newValue) async {
+                    if (newValue.isNotEmpty) {
+                      await taskProvider.updateTask(task.id, newValue);
                       setState(() {
                         task.isEditing = false;
                       });
-                    },
-                  )
-                : Text(
-                    task.title,
-                    style: TextStyle(
-                      decoration:
-                          task.isCompleted ? TextDecoration.lineThrough : null,
-                      color: task.isCompleted
-                          ? Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.color
-                              ?.withValues(
-                                alpha: 128.0, // 0.5 * 255
-                                red: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.color
-                                        ?.r
-                                        .toDouble() ??
-                                    0.0,
-                                green: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.color
-                                        ?.g
-                                        .toDouble() ??
-                                    0.0,
-                                blue: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.color
-                                        ?.b
-                                        .toDouble() ??
-                                    0.0,
-                              )
-                          : null,
-                    ),
-                  ),
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (!task.isCompleted)
-                IconButton(
-                  icon: const Icon(Icons.timer),
-                  onPressed: () {
-                    startTimer(task.title);
+                    }
                   },
+                  onEditingComplete: () {
+                    setState(() {
+                      task.isEditing = false;
+                    });
+                  },
+                )
+              : Text(
+                  task.title,
+                  style: TextStyle(
+                    decoration:
+                        task.isCompleted ? TextDecoration.lineThrough : null,
+                    color: task.isCompleted
+                        ? Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.color
+                            ?.withValues(
+                              alpha: 128.0,
+                              red: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.color
+                                      ?.r
+                                      .toDouble() ??
+                                  0.0,
+                              green: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.color
+                                      ?.g
+                                      .toDouble() ??
+                                  0.0,
+                              blue: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.color
+                                      ?.b
+                                      .toDouble() ??
+                                  0.0,
+                            )
+                        : null,
+                  ),
                 ),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!task.isCompleted)
               IconButton(
-                icon: const Icon(Icons.delete),
+                icon: const Icon(Icons.timer),
                 onPressed: () {
-                  context.read<TaskProvider>().removeTask(task.id);
+                  startTimer(task.title);
                 },
               ),
-            ],
-          ),
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () {
+                context.read<TaskProvider>().removeTask(task.id);
+              },
+            ),
+          ],
         ),
       ),
     );
