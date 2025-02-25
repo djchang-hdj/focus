@@ -1,29 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // 기본 색상 정의
-  static const Color primaryColorLight = Color(0xFF6366F1); // Indigo
-  static const Color primaryColorDark = Color(0xFF818CF8); // Light Indigo
-  static const Color accentColorLight = Color(0xFFF59E0B); // Amber
-  static const Color accentColorDark = Color(0xFFFBBF24); // Light Amber
+  // macOS 스타일 색상 정의
+  static const Color primaryColorLight = Color(0xFF007AFF); // Apple Blue
+  static const Color primaryColorDark = Color(0xFF0A84FF); // Apple Blue (Dark)
+  static const Color accentColorLight = Color(0xFF34C759); // Apple Green
+  static const Color accentColorDark = Color(0xFF30D158); // Apple Green (Dark)
 
   // 공통 테마 데이터
   static ThemeData _baseTheme(ColorScheme colorScheme) {
-    final textTheme = GoogleFonts.notoSansTextTheme().copyWith(
-      displayLarge: GoogleFonts.notoSans(
-        fontSize: 32,
+    const sfProDisplay = '.SF Pro Display'; // macOS 시스템 폰트
+    const sfProText = '.SF Pro Text';
+
+    final textTheme = TextTheme(
+      displayLarge: TextStyle(
+        fontFamily: sfProDisplay,
+        fontSize: 34,
         fontWeight: FontWeight.bold,
       ),
-      displayMedium: GoogleFonts.notoSans(
+      displayMedium: TextStyle(
+        fontFamily: sfProDisplay,
         fontSize: 28,
         fontWeight: FontWeight.bold,
       ),
-      titleLarge: GoogleFonts.notoSans(
+      titleLarge: TextStyle(
+        fontFamily: sfProDisplay,
         fontSize: 22,
         fontWeight: FontWeight.w600,
       ),
-      bodyLarge: GoogleFonts.notoSans(
+      bodyLarge: TextStyle(
+        fontFamily: sfProText,
         fontSize: 16,
         height: 1.5,
       ),
@@ -34,11 +40,14 @@ class AppTheme {
       useMaterial3: true,
       textTheme: textTheme,
 
-      // Card 테마
+      // macOS 스타일 카드 테마
       cardTheme: CardTheme(
-        elevation: 2,
+        elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(
+            color: colorScheme.outline.withAlpha(25),
+          ),
         ),
         margin: const EdgeInsets.symmetric(
           horizontal: 16,
@@ -46,28 +55,34 @@ class AppTheme {
         ),
       ),
 
-      // 버튼 테마
+      // macOS 스타일 버튼 테마
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(6),
           ),
           padding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 12,
+            horizontal: 16,
+            vertical: 8,
           ),
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
         ),
       ),
 
-      // 입력 필드 테마
+      // macOS 스타일 입력 필드 테마
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(6),
+          borderSide: BorderSide(
+            color: colorScheme.outline.withAlpha(76),
+          ),
         ),
         filled: true,
+        fillColor: colorScheme.surface,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
+          horizontal: 12,
+          vertical: 8,
         ),
       ),
     );

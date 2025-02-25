@@ -245,8 +245,14 @@ class _TaskListState extends State<TaskList> {
           leading: Checkbox(
             value: task.isCompleted,
             onChanged: (bool? value) {
-              context.read<TaskProvider>().toggleTask(task.id);
+              taskProvider.toggleTask(task.id);
             },
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
+            side: BorderSide(
+              color: Theme.of(context).colorScheme.outline.withAlpha(76),
+            ),
           ),
           title: GestureDetector(
             onDoubleTap: () {
@@ -372,12 +378,15 @@ class _TaskListState extends State<TaskList> {
             ),
           ),
           const SizedBox(width: 8),
-          FloatingActionButton(
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline),
+            iconSize: 18,
+            style: IconButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.primary,
+            ),
             onPressed: () {
               _focusNode.requestFocus();
             },
-            mini: true,
-            child: const Icon(Icons.add),
           ),
         ],
       ),

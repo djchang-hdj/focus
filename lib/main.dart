@@ -71,55 +71,50 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, _) {
-        return MaterialApp(
-          title: '생각하고 말하자',
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: themeProvider.themeMode,
-          builder: (context, child) {
-            return MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                textScaler: TextScaler.linear(1.0),
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    minWidth: 400,
-                    maxWidth: 800,
-                  ),
-                  child: child!,
-                ),
-              ),
-            );
-          },
-          home: const HomeScreen(),
-        );
-      },
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => TaskProvider()),
+        ChangeNotifierProvider(create: (_) => TimerProvider()),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'Focus',
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeProvider.themeMode,
+            debugShowCheckedModeBanner: false,
+            home: const MacosScaffold(), // 새로운 macOS 스타일 스캐폴드
+          );
+        },
+      ),
     );
   }
 }
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class MacosScaffold extends StatefulWidget {
+  const MacosScaffold({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<MacosScaffold> createState() => _MacosScaffoldState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _MacosScaffoldState extends State<MacosScaffold> {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _timerKey = GlobalKey();
 
   void scrollToTimer() {
     final context = _timerKey.currentContext;
     if (context != null) {
-      Scrollable.ensureVisible(
-        context,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
+      Future.delayed(const Duration(milliseconds: 100), () {
+        Scrollable.ensureVisible(
+          context,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+          alignment: 0.5,
+        );
+      });
     }
   }
 
@@ -131,89 +126,104 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            controller: _scrollController,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: constraints.maxHeight,
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          minWidth: 450,
+          maxWidth: 800,
+        ),
+        child: Scaffold(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          body: Column(
+            children: [
+              // macOS 스타일 타이틀바
+              Container(
+                height: 28,
+                color: Colors.transparent,
+                child: Row(
+                  children: [
+                    const Spacer(),
+                    // 테마 토글 버튼
+                    MacosIconButton(
+                      context: context,
+                      icon: Icons.dark_mode,
+                      onPressed: () {
+                        context.read<ThemeProvider>().toggleTheme();
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // 새로운 헤더 위젯
-                  const AppHeader(),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              // 메인 컨텐츠
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const SizedBox(height: 16),
-                        // 할 일 관리 섹션
+                        const SizedBox(height: 20),
+                        const AppHeader(),
+                        const SizedBox(height: 20),
                         TaskList(onTimerStart: scrollToTimer),
-
-                        const SizedBox(height: 16),
-                        // 포모도로 타이머 섹션
-                        FocusTimer(key: _timerKey),
-
-                        const SizedBox(height: 16),
-                        // 금기사항 섹션
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.warning_amber_rounded,
-                                      color:
-                                          Theme.of(context).colorScheme.error,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '집중을 유지하기 위해',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleLarge,
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                _buildProhibitedItem(
-                                  context,
-                                  Icons.play_circle_outline,
-                                  '유튜브, 넷플릭스, OTT 안 보기',
-                                ),
-                                const SizedBox(height: 8),
-                                _buildProhibitedItem(
-                                  context,
-                                  Icons.forum_outlined,
-                                  '커뮤니티 들어가지 않기',
-                                ),
-                                const SizedBox(height: 8),
-                                _buildProhibitedItem(
-                                  context,
-                                  Icons.public_outlined,
-                                  '불필요한 웹서핑 하지 말기',
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                         const SizedBox(height: 32),
+                        FocusTimer(key: _timerKey),
+                        const SizedBox(height: 32),
+                        // 금기사항 섹션
+                        _buildProhibitedSection(context),
                       ],
                     ),
                   ),
-                ],
+                ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProhibitedSection(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '집중을 유지하기 위해',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ],
             ),
-          );
-        },
+            const SizedBox(height: 16),
+            _buildProhibitedItem(
+              context,
+              Icons.play_circle_outline,
+              '유튜브, 넷플릭스, OTT 안 보기',
+            ),
+            const SizedBox(height: 8),
+            _buildProhibitedItem(
+              context,
+              Icons.forum_outlined,
+              '커뮤니티 들어가지 않기',
+            ),
+            const SizedBox(height: 8),
+            _buildProhibitedItem(
+              context,
+              Icons.public_outlined,
+              '불필요한 웹서핑 하지 말기',
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -240,6 +250,39 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+// macOS 스타일 아이콘 버튼
+class MacosIconButton extends StatelessWidget {
+  final BuildContext context;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const MacosIconButton({
+    super.key,
+    required this.context,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(4),
+        onTap: onPressed,
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          child: Icon(
+            icon,
+            size: 20,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      ),
     );
   }
 }

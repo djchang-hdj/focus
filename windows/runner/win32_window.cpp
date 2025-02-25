@@ -145,7 +145,7 @@ bool Win32Window::Create(const std::wstring& title,
   }
 
   // minimum size
-  RECT min_size = {0, 0, Scale(400, scale_factor), Scale(550, scale_factor)};
+  RECT min_size = {0, 0, Scale(450, scale_factor), Scale(550, scale_factor)};
   // maximum size
   RECT max_size = {0, 0, Scale(800, scale_factor), Scale(1600, scale_factor)};
   
