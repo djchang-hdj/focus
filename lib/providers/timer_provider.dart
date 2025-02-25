@@ -51,18 +51,30 @@ class TimerProvider with ChangeNotifier {
   bool get isRunning => _status == TimerStatus.running;
 
   Future<void> _loadSettings() async {
-    try {
-      _prefs = await SharedPreferences.getInstance();
-      _duration = _prefs.getInt(_settingsKey) ?? 1800;
-      _remainingTime = _duration;
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Timer settings initialization failed: $e');
-      // 기본값 사용
-      _duration = 1800;
-      _remainingTime = 1800;
-      notifyListeners();
+    int retryCount = 0;
+    const maxRetries = 3;
+
+    while (retryCount < maxRetries) {
+      try {
+        _prefs = await SharedPreferences.getInstance();
+        _duration = _prefs.getInt(_settingsKey) ?? 1800;
+        _remainingTime = _duration;
+        notifyListeners();
+        return;
+      } catch (e) {
+        retryCount++;
+        debugPrint('SharedPreferences retry $retryCount/$maxRetries: $e');
+        if (retryCount < maxRetries) {
+          await Future.delayed(Duration(milliseconds: 500 * retryCount));
+        }
+      }
     }
+
+    // 모든 재시도 실패 후 기본값 사용
+    debugPrint('Using default values after all retries failed');
+    _duration = 1800;
+    _remainingTime = 1800;
+    notifyListeners();
   }
 
   Future<bool> setDuration(int minutes) async {

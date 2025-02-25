@@ -35,11 +35,15 @@ class TaskProvider with ChangeNotifier {
   }
 
   Future<void> _loadTasks() async {
-    try {
-      _prefs = await SharedPreferences.getInstance();
-      final tasksJson = _prefs.getString(_tasksKey);
-      if (tasksJson != null) {
-        try {
+    int retryCount = 0;
+    const maxRetries = 3;
+
+    while (retryCount < maxRetries) {
+      try {
+        _prefs = await SharedPreferences.getInstance();
+        final tasksJson = _prefs.getString(_tasksKey);
+
+        if (tasksJson != null) {
           final tasksMap = json.decode(tasksJson) as Map<String, dynamic>;
           _tasks = tasksMap.map((key, value) {
             final List<dynamic> taskList = value;
@@ -48,22 +52,27 @@ class TaskProvider with ChangeNotifier {
               taskList.map((task) => Task.fromJson(task)).toList(),
             );
           });
-        } catch (e) {
-          debugPrint('Error parsing tasks: $e');
-          _tasks = {};
+        }
+
+        _isInitialized = true;
+        notifyListeners();
+        _initializationCompleter.complete();
+        return;
+      } catch (e) {
+        retryCount++;
+        debugPrint('Tasks loading retry $retryCount/$maxRetries: $e');
+        if (retryCount < maxRetries) {
+          await Future.delayed(Duration(milliseconds: 500 * retryCount));
         }
       }
-      _isInitialized = true;
-      notifyListeners();
-      _initializationCompleter.complete();
-    } catch (e) {
-      debugPrint('Task provider initialization failed: $e');
-      // 기본 상태로 복구
-      _tasks = {};
-      _isInitialized = true;
-      notifyListeners();
-      _initializationCompleter.complete();
     }
+
+    // 모든 재시도 실패 후 기본값 사용
+    debugPrint('Using empty tasks after all retries failed');
+    _tasks = {};
+    _isInitialized = true;
+    notifyListeners();
+    _initializationCompleter.complete();
   }
 
   Future<bool> _saveTasks() async {

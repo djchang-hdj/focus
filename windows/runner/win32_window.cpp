@@ -144,10 +144,10 @@ bool Win32Window::Create(const std::wstring& title,
     return false;
   }
 
-  // 최소 크기 설정
+  // minimum size
   RECT min_size = {0, 0, Scale(400, scale_factor), Scale(550, scale_factor)};
-  // 최대 크기 설정 - 높이 제한 제거
-  RECT max_size = {0, 0, Scale(800, scale_factor), 0}; // height를 0으로 설정하여 제한 없앰
+  // maximum size
+  RECT max_size = {0, 0, Scale(800, scale_factor), Scale(1600, scale_factor)};
   
   SetWindowLongPtr(window, GWL_STYLE, GetWindowLongPtr(window, GWL_STYLE) | WS_THICKFRAME);
   AdjustWindowRect(&min_size, static_cast<DWORD>(GetWindowLongPtr(window, GWL_STYLE)), FALSE);
