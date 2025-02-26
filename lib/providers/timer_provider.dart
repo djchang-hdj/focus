@@ -110,10 +110,7 @@ class TimerProvider with ChangeNotifier {
       if (_title.trim().isEmpty) {
         _title = '무제';
       }
-      if (_status == TimerStatus.finished) {
-        _startTime = DateTime.now();
-        _initialDuration = _duration;
-      } else if (_startTime == null) {
+      if (_status == TimerStatus.finished || _startTime == null) {
         _startTime = DateTime.now();
         _initialDuration = _duration;
       }
@@ -262,6 +259,7 @@ class TimerProvider with ChangeNotifier {
 
       // 타이머가 실행 중이 아니면 다시 시작
       if (_timer == null || !_timer!.isActive) {
+        _timer?.cancel();
         _timer = Timer.periodic(const Duration(seconds: 1), _tick);
       }
     }
@@ -293,7 +291,31 @@ class TimerProvider with ChangeNotifier {
   }
 
   // 타이머 상태 복원
-  Future<void> restoreTimerState() async {
+  Future<void> restoreTimerState(
+      {DateTime? startTime,
+      int? initialDuration,
+      int? remainingTime,
+      bool finished = false}) async {
+    // 웹 환경에서 직접 파라미터가 전달된 경우
+    if (startTime != null && initialDuration != null && remainingTime != null) {
+      debugPrint(
+          'Restoring timer state from parameters: start=$startTime, initial=$initialDuration, remaining=$remainingTime, finished=$finished');
+      _startTime = startTime;
+      _initialDuration = initialDuration;
+      _remainingTime = remainingTime;
+
+      if (finished) {
+        _status = TimerStatus.finished;
+      } else {
+        // 일시정지 상태로 복원 (start() 메소드에서 타이머 다시 시작)
+        _status = TimerStatus.paused;
+      }
+
+      notifyListeners();
+      return;
+    }
+
+    // SharedPreferences에서 복원하는 기존 로직
     try {
       final stateString = _prefs.getString(_timerStateKey);
       if (stateString == null || stateString.isEmpty) return;
