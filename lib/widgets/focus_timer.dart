@@ -11,10 +11,23 @@ class FocusTimer extends StatefulWidget {
 
 class _FocusTimerState extends State<FocusTimer> {
   final TextEditingController _titleController = TextEditingController();
+  final FocusNode _titleFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final timerProvider = Provider.of<TimerProvider>(context, listen: false);
+      if (timerProvider.title != '무제') {
+        _titleController.text = timerProvider.title;
+      }
+    });
+  }
 
   @override
   void dispose() {
     _titleController.dispose();
+    _titleFocusNode.dispose();
     super.dispose();
   }
 
@@ -22,10 +35,6 @@ class _FocusTimerState extends State<FocusTimer> {
   Widget build(BuildContext context) {
     return Consumer<TimerProvider>(
       builder: (context, timerProvider, child) {
-        if (_titleController.text.isEmpty && timerProvider.title != '무제') {
-          _titleController.text = timerProvider.title;
-        }
-
         final minutes = timerProvider.remainingTime ~/ 60;
         final seconds = timerProvider.remainingTime % 60;
 
@@ -206,10 +215,19 @@ class _FocusTimerState extends State<FocusTimer> {
                 border: OutlineInputBorder(),
               ),
               controller: _titleController,
+              focusNode: _titleFocusNode,
               onSubmitted: (value) {
                 timerProvider.setTitle(value);
               },
-              onEditingComplete: () => FocusScope.of(context).unfocus(),
+              onTap: () {
+                if (!_titleFocusNode.hasFocus) {
+                  _titleFocusNode.requestFocus();
+                }
+              },
+              onEditingComplete: () {
+                timerProvider.setTitle(_titleController.text);
+                _titleFocusNode.unfocus();
+              },
               textInputAction: TextInputAction.done,
             ),
           ),
