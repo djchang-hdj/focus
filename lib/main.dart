@@ -110,7 +110,7 @@ class _MacosScaffoldState extends State<MacosScaffold> {
           context,
           duration: const Duration(milliseconds: 500),
           curve: Curves.easeInOut,
-          alignment: 0.5,
+          alignment: 0.0,
         );
       });
     }
