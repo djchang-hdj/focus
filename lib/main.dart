@@ -9,6 +9,9 @@ import 'package:focus/providers/timer_provider.dart';
 import 'package:focus/widgets/focus_timer.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/rendering.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:focus/web_utils.dart'
+    if (dart.library.io) 'package:focus/non_web_utils.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +19,7 @@ void main() async {
   await initializeDateFormatting('ko_KR', null);
 
   // Windows에서 접근성 에러 로그 비활성화
-  if (Platform.isWindows) {
+  if (!kIsWeb && Platform.isWindows) {
     SemanticsBinding.instance.ensureSemantics();
   }
 
@@ -48,18 +51,16 @@ void main() async {
     // 에러가 발생해도 앱은 계속 실행
   }
 
+  // 웹 환경에서 가시성 리스너 설정
+  setupWebVisibilityListener(timerProvider);
+
+  // 앱 실행
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider.value(
-          value: themeProvider,
-        ),
-        ChangeNotifierProvider.value(
-          value: taskProvider,
-        ),
-        ChangeNotifierProvider.value(
-          value: timerProvider,
-        ),
+        ChangeNotifierProvider.value(value: themeProvider),
+        ChangeNotifierProvider.value(value: taskProvider),
+        ChangeNotifierProvider.value(value: timerProvider),
       ],
       child: const MyApp(),
     ),
@@ -71,24 +72,20 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => TaskProvider()),
-        ChangeNotifierProvider(create: (_) => TimerProvider()),
-      ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
-          return MaterialApp(
-            title: 'Focus',
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeProvider.themeMode,
-            debugShowCheckedModeBanner: false,
-            home: const MacosScaffold(), // 새로운 macOS 스타일 스캐폴드
-          );
-        },
-      ),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        final app = MaterialApp(
+          title: 'Focus',
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeProvider.themeMode,
+          debugShowCheckedModeBanner: false,
+          home: const MacosScaffold(), // 새로운 macOS 스타일 스캐폴드
+        );
+
+        // 웹 환경에서 가시성 리스너 추가
+        return addWebVisibilityListener(app);
+      },
     );
   }
 }

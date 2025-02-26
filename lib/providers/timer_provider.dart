@@ -26,6 +26,7 @@ class TimerRecord {
 
 class TimerProvider with ChangeNotifier {
   static const String _settingsKey = 'timer_settings';
+  static const String _timerStateKey = 'timer_state';
   Timer? _timer;
   int _duration = 1800; // 기본 30분
   int _remainingTime = 1800;
@@ -59,6 +60,10 @@ class TimerProvider with ChangeNotifier {
         _prefs = await SharedPreferences.getInstance();
         _duration = _prefs.getInt(_settingsKey) ?? 1800;
         _remainingTime = _duration;
+
+        // 타이머 상태 복원 시도
+        await restoreTimerState();
+
         notifyListeners();
         return;
       } catch (e) {
@@ -112,6 +117,10 @@ class TimerProvider with ChangeNotifier {
         _startTime = DateTime.now();
         _initialDuration = _duration;
       }
+
+      // 타이머 상태 저장
+      saveTimerState();
+
       notifyListeners();
     }
   }
@@ -119,6 +128,10 @@ class TimerProvider with ChangeNotifier {
   void pause() {
     _timer?.cancel();
     _status = TimerStatus.paused;
+
+    // 타이머 상태 저장
+    saveTimerState();
+
     notifyListeners();
   }
 
@@ -133,6 +146,10 @@ class TimerProvider with ChangeNotifier {
     _title = '무제';
     _startTime = null;
     _initialDuration = 1800;
+
+    // 타이머 상태 초기화
+    clearTimerState();
+
     notifyListeners();
   }
 
@@ -223,6 +240,120 @@ class TimerProvider with ChangeNotifier {
   Future<void> clearAllRecords() async {
     _records.clear();
     notifyListeners();
+  }
+
+  // 웹 페이지 가시성 변경 시 타이머 상태 업데이트
+  void updateTimerOnVisibilityChange() {
+    if (_startTime == null || _status != TimerStatus.running) return;
+
+    // 마지막 시작 시간부터 현재까지 경과 시간 계산 (초 단위)
+    final now = DateTime.now();
+    final elapsedSeconds = now.difference(_startTime!).inSeconds;
+
+    // 경과 시간이 초기 설정 시간보다 크거나 같으면 타이머 완료 처리
+    if (elapsedSeconds >= _initialDuration) {
+      _remainingTime = 0;
+      _timer?.cancel();
+      _status = TimerStatus.finished;
+      addRecord();
+    } else {
+      // 남은 시간 업데이트
+      _remainingTime = _initialDuration - elapsedSeconds;
+
+      // 타이머가 실행 중이 아니면 다시 시작
+      if (_timer == null || !_timer!.isActive) {
+        _timer = Timer.periodic(const Duration(seconds: 1), _tick);
+      }
+    }
+
+    notifyListeners();
+  }
+
+  // 타이머 상태 저장
+  Future<void> saveTimerState() async {
+    if (_status == TimerStatus.initial) {
+      await clearTimerState();
+      return;
+    }
+
+    try {
+      final timerState = {
+        'status': _status.index,
+        'title': _title,
+        'initialDuration': _initialDuration,
+        'remainingTime': _remainingTime,
+        'startTimeMillis': _startTime?.millisecondsSinceEpoch ?? 0,
+      };
+
+      await _prefs.setString(_timerStateKey, timerState.toString());
+      debugPrint('Timer state saved: $timerState');
+    } catch (e) {
+      debugPrint('Error saving timer state: $e');
+    }
+  }
+
+  // 타이머 상태 복원
+  Future<void> restoreTimerState() async {
+    try {
+      final stateString = _prefs.getString(_timerStateKey);
+      if (stateString == null || stateString.isEmpty) return;
+
+      // 문자열에서 Map으로 변환
+      final stateStr = stateString.replaceAll('{', '').replaceAll('}', '');
+      final statePairs = stateStr.split(',');
+      final Map<String, dynamic> state = {};
+
+      for (final pair in statePairs) {
+        final keyValue = pair.trim().split(':');
+        if (keyValue.length == 2) {
+          final key = keyValue[0].trim().replaceAll("'", "");
+          final value = keyValue[1].trim();
+
+          if (key == 'status' ||
+              key == 'initialDuration' ||
+              key == 'remainingTime' ||
+              key == 'startTimeMillis') {
+            state[key] = int.tryParse(value) ?? 0;
+          } else if (key == 'title') {
+            state[key] = value.replaceAll("'", "");
+          }
+        }
+      }
+
+      // 상태 복원
+      final statusIndex = state['status'] as int;
+      _status = TimerStatus.values[statusIndex];
+      _title = state['title'] as String? ?? '무제';
+      _initialDuration = state['initialDuration'] as int? ?? 1800;
+      _remainingTime = state['remainingTime'] as int? ?? _initialDuration;
+
+      final startTimeMillis = state['startTimeMillis'] as int?;
+      if (startTimeMillis != null && startTimeMillis > 0) {
+        _startTime = DateTime.fromMillisecondsSinceEpoch(startTimeMillis);
+      }
+
+      // 실행 중이었던 타이머 상태 업데이트
+      if (_status == TimerStatus.running) {
+        updateTimerOnVisibilityChange();
+      }
+
+      debugPrint('Timer state restored: $_status, $_title, $_remainingTime');
+    } catch (e) {
+      debugPrint('Error restoring timer state: $e');
+      // 오류 발생 시 타이머 초기화
+      _status = TimerStatus.initial;
+      _remainingTime = _duration;
+      _startTime = null;
+    }
+  }
+
+  // 타이머 상태 초기화
+  Future<void> clearTimerState() async {
+    try {
+      await _prefs.remove(_timerStateKey);
+    } catch (e) {
+      debugPrint('Error clearing timer state: $e');
+    }
   }
 
   @override
