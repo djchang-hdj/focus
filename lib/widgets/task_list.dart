@@ -378,6 +378,45 @@ class _TaskListState extends State<TaskList> {
 
   void startTimer(String taskTitle) {
     final timerProvider = context.read<TimerProvider>();
+
+    // 이미 타이머가 실행 중인지 확인
+    if (timerProvider.status == TimerStatus.running) {
+      // 스낵바로 사용자에게 알림
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.timer, color: Colors.white),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('이미 타이머가 실행 중입니다'),
+                    Text(
+                      '현재 작업: ${timerProvider.title}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: '타이머로 이동',
+            onPressed: widget.onTimerStart,
+          ),
+        ),
+      );
+      return;
+    }
+
     if (timerProvider.status == TimerStatus.finished) {
       timerProvider.reset();
     }
