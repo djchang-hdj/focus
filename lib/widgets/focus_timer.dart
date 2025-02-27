@@ -424,6 +424,8 @@ class _FocusTimerState extends State<FocusTimer> {
                                       ?.copyWith(
                                         fontWeight: FontWeight.w600,
                                       ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                 ),
                               ),
                               _buildStatusBadge(context, record.isCompleted),
@@ -436,14 +438,15 @@ class _FocusTimerState extends State<FocusTimer> {
                           ),
                           const SizedBox(height: 8),
                           // 시간 정보 행
-                          Row(
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
                             children: [
                               _buildRecordInfoChip(
                                 context,
                                 Icons.timer_outlined,
                                 '${record.actualDuration ~/ 60}/${record.initialDuration ~/ 60}분',
                               ),
-                              const SizedBox(width: 8),
                               _buildRecordInfoChip(
                                 context,
                                 Icons.schedule,
@@ -485,11 +488,14 @@ class _FocusTimerState extends State<FocusTimer> {
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           const SizedBox(width: 4),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+          Flexible(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
