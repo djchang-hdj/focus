@@ -21,11 +21,19 @@ class TaskList extends StatefulWidget {
 class _TaskListState extends State<TaskList> {
   final TextEditingController _textController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  final Map<String, FocusNode> _editFocusNodes = {};
+  final Map<String, TextEditingController> _editControllers = {};
 
   @override
   void dispose() {
     _textController.dispose();
     _focusNode.dispose();
+    for (final focusNode in _editFocusNodes.values) {
+      focusNode.dispose();
+    }
+    for (final controller in _editControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -44,71 +52,112 @@ class _TaskListState extends State<TaskList> {
             return 0;
           });
 
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildDateSelector(context, taskProvider),
-            _buildProgressBar(taskProvider),
-            if (tasks.isEmpty)
-              _buildEmptyState(context, taskProvider)
-            else
-              Flexible(
-                child: ReorderableListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  buildDefaultDragHandles: false,
-                  itemCount: tasks.length,
-                  onReorder: (oldIndex, newIndex) {
-                    if (oldIndex < newIndex) {
-                      newIndex -= 1;
-                    }
-                    final movedTask = tasks[oldIndex];
-                    final targetTask = tasks[newIndex];
+        return GestureDetector(
+          onTap: () {
+            // Save any active edits when tapping outside
+            bool needsUpdate = false;
+            for (final task in tasks) {
+              if (task.isEditing) {
+                final controller = _editControllers[task.id];
+                if (controller != null && controller.text.isNotEmpty) {
+                  taskProvider.updateTask(task.id, controller.text);
+                }
+                taskProvider.setTaskEditing(task.id, false);
+                needsUpdate = true;
+              }
+            }
+            if (needsUpdate) {
+              setState(() {});
+            }
+          },
+          behavior: HitTestBehavior.translucent,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDateSelector(context, taskProvider),
+              _buildProgressBar(taskProvider),
+              if (tasks.isEmpty)
+                _buildEmptyState(context, taskProvider)
+              else
+                Flexible(
+                  child: ReorderableListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    buildDefaultDragHandles: false,
+                    itemCount: tasks.length,
+                    onReorder: (oldIndex, newIndex) {
+                      // Save any active edits before reordering
+                      for (final task in tasks) {
+                        if (task.isEditing) {
+                          final controller = _editControllers[task.id];
+                          if (controller != null &&
+                              controller.text.isNotEmpty) {
+                            taskProvider.updateTask(task.id, controller.text);
+                          }
+                          taskProvider.setTaskEditing(task.id, false);
+                        }
+                      }
 
-                    // 같은 완료 상태 그룹 내에서만 이동 허용
-                    if (movedTask.isCompleted == targetTask.isCompleted) {
-                      taskProvider.reorderTask(oldIndex, newIndex);
-                    } else {
-                      // 다른 그룹으로 이동 시도하면 원래 위치로 돌아가도록 setState
-                      setState(() {});
-                    }
-                  },
-                  itemBuilder: (context, index) {
-                    final task = tasks[index];
-                    return ReorderableDragStartListener(
-                      key: ValueKey(task.id),
-                      index: index,
-                      child: _buildTaskItem(context, task, taskProvider),
-                    );
-                  },
-                  proxyDecorator: (child, index, animation) {
-                    return AnimatedBuilder(
-                      animation: animation,
-                      builder: (context, child) {
-                        final double elevation =
-                            lerpDouble(1, 6, animation.value) ?? 0;
-                        return Material(
-                          elevation: elevation,
-                          color: Colors.transparent,
-                          shadowColor: Theme.of(context).shadowColor.withValues(
-                                alpha: (Theme.of(context).shadowColor.a * 0.2)
-                                    .toDouble(),
-                                red: Theme.of(context).shadowColor.r.toDouble(),
-                                green:
-                                    Theme.of(context).shadowColor.g.toDouble(),
-                                blue:
-                                    Theme.of(context).shadowColor.b.toDouble(),
-                              ),
-                          child: child,
-                        );
-                      },
-                      child: child,
-                    );
-                  },
+                      if (oldIndex < newIndex) {
+                        newIndex -= 1;
+                      }
+                      final movedTask = tasks[oldIndex];
+                      final targetTask = tasks[newIndex];
+
+                      // 같은 완료 상태 그룹 내에서만 이동 허용
+                      if (movedTask.isCompleted == targetTask.isCompleted) {
+                        taskProvider.reorderTask(oldIndex, newIndex);
+                      } else {
+                        // 다른 그룹으로 이동 시도하면 원래 위치로 돌아가도록 setState
+                        setState(() {});
+                      }
+                    },
+                    itemBuilder: (context, index) {
+                      final task = tasks[index];
+                      return ReorderableDragStartListener(
+                        key: ValueKey(task.id),
+                        index: index,
+                        child: _buildTaskItem(context, task, taskProvider),
+                      );
+                    },
+                    proxyDecorator: (child, index, animation) {
+                      return AnimatedBuilder(
+                        animation: animation,
+                        builder: (context, child) {
+                          final double elevation =
+                              lerpDouble(1, 6, animation.value) ?? 0;
+                          return Material(
+                            elevation: elevation,
+                            color: Colors.transparent,
+                            shadowColor: Theme.of(context)
+                                .shadowColor
+                                .withValues(
+                                  alpha: (Theme.of(context).shadowColor.a * 0.2)
+                                      .toDouble(),
+                                  red: Theme.of(context)
+                                      .shadowColor
+                                      .r
+                                      .toDouble(),
+                                  green: Theme.of(context)
+                                      .shadowColor
+                                      .g
+                                      .toDouble(),
+                                  blue: Theme.of(context)
+                                      .shadowColor
+                                      .b
+                                      .toDouble(),
+                                ),
+                            child: child,
+                          );
+                        },
+                        child: child,
+                      );
+                    },
+                  ),
                 ),
-              ),
-            _buildAddTaskField(context, taskProvider),
-          ],
+              _buildAddTaskField(context, taskProvider),
+            ],
+          ),
         );
       },
     );
@@ -272,6 +321,26 @@ class _TaskListState extends State<TaskList> {
 
   Widget _buildTaskItem(
       BuildContext context, Task task, TaskProvider taskProvider) {
+    if (!_editFocusNodes.containsKey(task.id)) {
+      final focusNode = FocusNode();
+      focusNode.addListener(() {
+        if (!focusNode.hasFocus && task.isEditing) {
+          final controller = _editControllers[task.id];
+          if (controller != null && controller.text.isNotEmpty) {
+            taskProvider.updateTask(task.id, controller.text);
+          }
+          taskProvider.setTaskEditing(task.id, false);
+        }
+      });
+      _editFocusNodes[task.id] = focusNode;
+    }
+
+    if (!_editControllers.containsKey(task.id)) {
+      _editControllers[task.id] = TextEditingController(text: task.title);
+    } else {
+      _editControllers[task.id]!.text = task.title;
+    }
+
     return Card(
       key: ValueKey(task.id),
       margin: const EdgeInsets.symmetric(vertical: 4.0),
@@ -294,26 +363,26 @@ class _TaskListState extends State<TaskList> {
         ),
         title: GestureDetector(
           onDoubleTap: () {
+            taskProvider.setTaskEditing(task.id, true);
             setState(() {
-              task.isEditing = true;
+              _editControllers[task.id]!.text = task.title;
+              // Request focus to ensure the keyboard appears
+              _editFocusNodes[task.id]?.requestFocus();
             });
           },
           child: task.isEditing
               ? TextField(
-                  controller: TextEditingController(text: task.title),
+                  controller: _editControllers[task.id],
+                  focusNode: _editFocusNodes[task.id],
                   autofocus: true,
                   onSubmitted: (newValue) async {
                     if (newValue.isNotEmpty) {
                       await taskProvider.updateTask(task.id, newValue);
-                      setState(() {
-                        task.isEditing = false;
-                      });
+                      taskProvider.setTaskEditing(task.id, false);
                     }
                   },
                   onEditingComplete: () {
-                    setState(() {
-                      task.isEditing = false;
-                    });
+                    taskProvider.setTaskEditing(task.id, false);
                   },
                 )
               : Text(
@@ -367,6 +436,17 @@ class _TaskListState extends State<TaskList> {
             IconButton(
               icon: const Icon(Icons.delete),
               onPressed: () {
+                // Clean up focus node and controller when task is removed
+                final focusNode = _editFocusNodes.remove(task.id);
+                final controller = _editControllers.remove(task.id);
+                focusNode?.dispose();
+                controller?.dispose();
+
+                // If the task is being edited, make sure to close the editing state
+                if (task.isEditing) {
+                  taskProvider.setTaskEditing(task.id, false);
+                }
+
                 context.read<TaskProvider>().removeTask(task.id);
               },
             ),

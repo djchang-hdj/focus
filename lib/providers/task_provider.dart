@@ -49,7 +49,10 @@ class TaskProvider with ChangeNotifier {
             final List<dynamic> taskList = value;
             return MapEntry(
               key,
-              taskList.map((task) => Task.fromJson(task)).toList(),
+              taskList.map((task) {
+                final loadedTask = Task.fromJson(task);
+                return loadedTask.copyWith(isEditing: false);
+              }).toList(),
             );
           });
         }
@@ -78,7 +81,13 @@ class TaskProvider with ChangeNotifier {
   Future<bool> _saveTasks() async {
     try {
       final tasksJson = json.encode(_tasks.map((key, value) {
-        return MapEntry(key, value.map((task) => task.toJson()).toList());
+        return MapEntry(
+            key,
+            value.map((task) {
+              // Reset isEditing to false when saving to ensure it doesn't persist
+              final taskToSave = task.copyWith(isEditing: false);
+              return taskToSave.toJson();
+            }).toList());
       }));
       await _prefs.setString(_tasksKey, tasksJson);
       return true;
@@ -171,6 +180,17 @@ class TaskProvider with ChangeNotifier {
       return true;
     }
     return false;
+  }
+
+  void setTaskEditing(String taskId, bool isEditing) {
+    final dateKey = _getDateKey(_selectedDate);
+    final taskIndex = _tasks[dateKey]?.indexWhere((t) => t.id == taskId) ?? -1;
+
+    if (taskIndex != -1) {
+      final oldTask = _tasks[dateKey]![taskIndex];
+      _tasks[dateKey]![taskIndex] = oldTask.copyWith(isEditing: isEditing);
+      notifyListeners();
+    }
   }
 
   double get completionRate {
