@@ -54,21 +54,12 @@ class _TaskListState extends State<TaskList> {
 
         return GestureDetector(
           onTap: () {
-            // Save any active edits when tapping outside
-            bool needsUpdate = false;
-            for (final task in tasks) {
-              if (task.isEditing) {
-                final controller = _editControllers[task.id];
-                if (controller != null && controller.text.isNotEmpty) {
-                  taskProvider.updateTask(task.id, controller.text);
-                }
-                taskProvider.setTaskEditing(task.id, false);
-                needsUpdate = true;
-              }
-            }
-            if (needsUpdate) {
-              setState(() {});
-            }
+            // 외부를 탭할 때 편집 중인 모든 작업 저장 및 편집 모드 종료
+            taskProvider.saveAndCloseAllTaskEditors(_editControllers).then((_) {
+              if (!mounted) return;
+              setState(
+                  () {}); // Ensure UI updates after async operation completes
+            });
           },
           behavior: HitTestBehavior.translucent,
           child: Column(
@@ -86,31 +77,26 @@ class _TaskListState extends State<TaskList> {
                     buildDefaultDragHandles: false,
                     itemCount: tasks.length,
                     onReorder: (oldIndex, newIndex) {
-                      // Save any active edits before reordering
-                      for (final task in tasks) {
-                        if (task.isEditing) {
-                          final controller = _editControllers[task.id];
-                          if (controller != null &&
-                              controller.text.isNotEmpty) {
-                            taskProvider.updateTask(task.id, controller.text);
-                          }
-                          taskProvider.setTaskEditing(task.id, false);
+                      // 재정렬 전에 편집 중인 모든 작업 저장 및 편집 모드 종료
+                      taskProvider
+                          .saveAndCloseAllTaskEditors(_editControllers)
+                          .then((_) {
+                        if (!mounted) return;
+
+                        if (oldIndex < newIndex) {
+                          newIndex -= 1;
                         }
-                      }
+                        final movedTask = tasks[oldIndex];
+                        final targetTask = tasks[newIndex];
 
-                      if (oldIndex < newIndex) {
-                        newIndex -= 1;
-                      }
-                      final movedTask = tasks[oldIndex];
-                      final targetTask = tasks[newIndex];
-
-                      // 같은 완료 상태 그룹 내에서만 이동 허용
-                      if (movedTask.isCompleted == targetTask.isCompleted) {
-                        taskProvider.reorderTask(oldIndex, newIndex);
-                      } else {
-                        // 다른 그룹으로 이동 시도하면 원래 위치로 돌아가도록 setState
-                        setState(() {});
-                      }
+                        // 같은 완료 상태 그룹 내에서만 이동 허용
+                        if (movedTask.isCompleted == targetTask.isCompleted) {
+                          taskProvider.reorderTask(oldIndex, newIndex);
+                        } else {
+                          // 다른 그룹으로 이동 시도하면 원래 위치로 돌아가도록 setState
+                          setState(() {});
+                        }
+                      });
                     },
                     itemBuilder: (context, index) {
                       final task = tasks[index];
@@ -236,24 +222,20 @@ class _TaskListState extends State<TaskList> {
           IconButton(
             icon: const Icon(Icons.chevron_left),
             onPressed: () {
-              final newDate =
-                  taskProvider.selectedDate.subtract(const Duration(days: 1));
-              taskProvider.selectDate(newDate);
+              // Save any ongoing edits before changing the date
+              taskProvider
+                  .saveAndCloseAllTaskEditors(_editControllers)
+                  .then((_) {
+                if (!mounted) return;
+                final newDate =
+                    taskProvider.selectedDate.subtract(const Duration(days: 1));
+                taskProvider.selectDate(newDate);
+              });
             },
           ),
           Expanded(
             child: GestureDetector(
-              onTap: () async {
-                final date = await showDatePicker(
-                  context: context,
-                  initialDate: taskProvider.selectedDate,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime(2025),
-                );
-                if (date != null) {
-                  taskProvider.selectDate(date);
-                }
-              },
+              onTap: () => _handleDatePickerTap(taskProvider),
               child: Column(
                 children: [
                   Text(
@@ -264,7 +246,13 @@ class _TaskListState extends State<TaskList> {
                   if (!isToday)
                     TextButton(
                       onPressed: () {
-                        taskProvider.selectDate(DateTime.now());
+                        // Save any ongoing edits before changing to today
+                        taskProvider
+                            .saveAndCloseAllTaskEditors(_editControllers)
+                            .then((_) {
+                          if (!mounted) return;
+                          taskProvider.selectDate(DateTime.now());
+                        });
                       },
                       child: const Text('오늘로 이동'),
                     ),
@@ -275,14 +263,45 @@ class _TaskListState extends State<TaskList> {
           IconButton(
             icon: const Icon(Icons.chevron_right),
             onPressed: () {
-              final newDate =
-                  taskProvider.selectedDate.add(const Duration(days: 1));
-              taskProvider.selectDate(newDate);
+              // Save any ongoing edits before changing the date
+              taskProvider
+                  .saveAndCloseAllTaskEditors(_editControllers)
+                  .then((_) {
+                if (!mounted) return;
+                final newDate =
+                    taskProvider.selectedDate.add(const Duration(days: 1));
+                taskProvider.selectDate(newDate);
+              });
             },
           ),
         ],
       ),
     );
+  }
+
+  // 날짜 선택기 탭 처리를 위한 메서드
+  Future<void> _handleDatePickerTap(TaskProvider taskProvider) async {
+    // 비동기 작업 전에 필요한 값 캡처
+    final initialDate = taskProvider.selectedDate;
+
+    // Save any ongoing edits before showing date picker
+    await taskProvider.saveAndCloseAllTaskEditors(_editControllers);
+
+    // mounted 체크
+    if (!mounted) return;
+
+    // 날짜 선택기 표시
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2025),
+    );
+
+    // mounted 체크 후 날짜 업데이트
+    if (date != null && mounted) {
+      taskProvider.selectDate(date);
+    }
   }
 
   Widget _buildProgressBar(TaskProvider taskProvider) {
@@ -321,23 +340,37 @@ class _TaskListState extends State<TaskList> {
 
   Widget _buildTaskItem(
       BuildContext context, Task task, TaskProvider taskProvider) {
+    // 포커스 노드가 없으면 생성
     if (!_editFocusNodes.containsKey(task.id)) {
       final focusNode = FocusNode();
       focusNode.addListener(() {
         if (!focusNode.hasFocus && task.isEditing) {
+          // 포커스가 사라질 때 텍스트를 즉시 저장하고 편집 상태를 종료
           final controller = _editControllers[task.id];
-          if (controller != null && controller.text.isNotEmpty) {
-            taskProvider.updateTask(task.id, controller.text);
+          if (controller != null) {
+            // 비동기 작업을 시작하기 전에 현재 텍스트 값을 캡처
+            final currentText = controller.text;
+
+            // UI 상태를 먼저 업데이트하여 사용자 경험 개선
+            setState(() {
+              // 편집 상태를 즉시 종료하여 UI 반응성 유지
+              taskProvider.setTaskEditing(task.id, false);
+            });
+
+            // 그 후 비동기적으로 저장 작업 수행
+            // 저장 실패 시 스낵바를 표시하는 로직을 별도 메서드로 분리
+            _saveTaskAndShowErrorIfNeeded(task.id, currentText);
           }
-          taskProvider.setTaskEditing(task.id, false);
         }
       });
       _editFocusNodes[task.id] = focusNode;
     }
 
+    // 컨트롤러 관리 개선
     if (!_editControllers.containsKey(task.id)) {
       _editControllers[task.id] = TextEditingController(text: task.title);
-    } else {
+    } else if (!task.isEditing) {
+      // 편집 중이 아닐 때만 컨트롤러 텍스트 업데이트
       _editControllers[task.id]!.text = task.title;
     }
 
@@ -363,11 +396,32 @@ class _TaskListState extends State<TaskList> {
         ),
         title: GestureDetector(
           onDoubleTap: () {
-            taskProvider.setTaskEditing(task.id, true);
+            // 다른 열린 에디터 먼저 닫기
+            for (final otherTask in taskProvider.currentTasks) {
+              if (otherTask.isEditing && otherTask.id != task.id) {
+                final controller = _editControllers[otherTask.id];
+                if (controller != null) {
+                  // 비동기 작업을 시작하기 전에 현재 텍스트 값을 캡처
+                  final currentText = controller.text;
+
+                  // UI 상태를 먼저 업데이트
+                  taskProvider.setTaskEditing(otherTask.id, false);
+
+                  // 그 후 비동기적으로 저장
+                  taskProvider.updateTask(otherTask.id, currentText);
+                }
+              }
+            }
+
+            // 이제 이 에디터 열기
             setState(() {
-              _editControllers[task.id]!.text = task.title;
-              // Request focus to ensure the keyboard appears
-              _editFocusNodes[task.id]?.requestFocus();
+              taskProvider.setTaskEditing(task.id, true);
+              // 다음 프레임에서 포커스 요청하여 키보드가 나타나도록 함
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  _editFocusNodes[task.id]?.requestFocus();
+                }
+              });
             });
           },
           child: task.isEditing
@@ -375,14 +429,30 @@ class _TaskListState extends State<TaskList> {
                   controller: _editControllers[task.id],
                   focusNode: _editFocusNodes[task.id],
                   autofocus: true,
-                  onSubmitted: (newValue) async {
-                    if (newValue.isNotEmpty) {
-                      await taskProvider.updateTask(task.id, newValue);
+                  decoration: const InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  onSubmitted: (newValue) {
+                    // 비동기 작업을 시작하기 전에 UI 상태 업데이트
+                    setState(() {
                       taskProvider.setTaskEditing(task.id, false);
-                    }
+                    });
+
+                    // 그 후 비동기적으로 저장
+                    taskProvider.updateTask(task.id, newValue);
                   },
                   onEditingComplete: () {
-                    taskProvider.setTaskEditing(task.id, false);
+                    final controller = _editControllers[task.id];
+                    if (controller != null) {
+                      // 비동기 작업을 시작하기 전에 UI 상태 업데이트
+                      setState(() {
+                        taskProvider.setTaskEditing(task.id, false);
+                      });
+
+                      // 그 후 비동기적으로 저장
+                      taskProvider.updateTask(task.id, controller.text);
+                    }
                   },
                 )
               : Text(
@@ -435,25 +505,69 @@ class _TaskListState extends State<TaskList> {
               ),
             IconButton(
               icon: const Icon(Icons.delete),
-              onPressed: () {
-                // Clean up focus node and controller when task is removed
+              onPressed: () async {
+                // 작업이 제거될 때 포커스 노드와 컨트롤러 정리
                 final focusNode = _editFocusNodes.remove(task.id);
                 final controller = _editControllers.remove(task.id);
-                focusNode?.dispose();
-                controller?.dispose();
 
-                // If the task is being edited, make sure to close the editing state
-                if (task.isEditing) {
-                  taskProvider.setTaskEditing(task.id, false);
+                // 작업이 편집 중이면 삭제 전에 내용 저장
+                if (task.isEditing && controller != null) {
+                  // 비동기 작업을 시작하기 전에 현재 텍스트 값을 캡처
+                  final currentText = controller.text;
+
+                  // UI 상태를 먼저 업데이트
+                  setState(() {
+                    taskProvider.setTaskEditing(task.id, false);
+                  });
+
+                  // 그 후 비동기적으로 저장 후 삭제
+                  await taskProvider.updateTask(task.id, currentText);
+
+                  // mounted 체크 추가
+                  if (!mounted) {
+                    focusNode?.dispose();
+                    controller.dispose();
+                    return;
+                  }
                 }
 
-                context.read<TaskProvider>().removeTask(task.id);
+                // 그런 다음 작업 제거
+                await taskProvider.removeTask(task.id);
+
+                // mounted 체크 추가
+                if (!mounted) {
+                  focusNode?.dispose();
+                  controller?.dispose();
+                  return;
+                }
+
+                focusNode?.dispose();
+                controller?.dispose();
               },
             ),
           ],
         ),
       ),
     );
+  }
+
+  // 작업 저장 및 오류 표시를 위한 별도 메서드
+  Future<void> _saveTaskAndShowErrorIfNeeded(String taskId, String text) async {
+    // 비동기 작업 전에 BuildContext 캡처
+    final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+
+    final success = await taskProvider.updateTask(taskId, text);
+
+    // mounted 체크를 통해 위젯이 여전히 화면에 있는지 확인
+    if (!success && mounted) {
+      // 저장 실패 시 사용자에게 알림
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('작업을 저장하는 중 오류가 발생했습니다.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void startTimer(String taskTitle) {
@@ -552,16 +666,24 @@ class _TaskListState extends State<TaskList> {
   void _addTask(
       BuildContext context, TaskProvider taskProvider, String value) async {
     if (value.isNotEmpty) {
-      final success = await taskProvider.addTask(value);
-      if (!success && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+      // 비동기 작업 전에 값 캡처
+      final textToAdd = value;
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+      // 텍스트 필드 즉시 초기화
+      _textController.clear();
+
+      final success = await taskProvider.addTask(textToAdd);
+
+      // mounted 체크 추가
+      if (!success && mounted) {
+        scaffoldMessenger.showSnackBar(
           const SnackBar(
             content: Text('작업을 저장하는 중 오류가 발생했습니다.'),
             backgroundColor: Colors.red,
           ),
         );
       }
-      _textController.clear();
     }
   }
 }

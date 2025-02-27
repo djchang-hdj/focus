@@ -25,7 +25,10 @@ class TaskProvider with ChangeNotifier {
   DateTime get selectedDate => _selectedDate;
   List<Task> get currentTasks => _tasks[_getDateKey(_selectedDate)] ?? [];
 
-  void selectDate(DateTime date) {
+  void selectDate(DateTime date) async {
+    // Close all editors before changing the date
+    closeAllTaskEditors();
+
     _selectedDate = date;
     notifyListeners();
   }
@@ -167,17 +170,38 @@ class TaskProvider with ChangeNotifier {
 
     if (taskIndex != -1) {
       final oldTask = _tasks[dateKey]![taskIndex];
-      _tasks[dateKey]![taskIndex] = oldTask.copyWith(title: newTitle);
 
-      final success = await _saveTasks();
-      if (!success) {
+      // 이미 같은 제목이면 변경 없이 성공으로 간주
+      if (oldTask.title == newTitle) {
+        return true;
+      }
+
+      // 먼저 UI 상태 업데이트를 위해 로컬 데이터 변경
+      _tasks[dateKey]![taskIndex] = oldTask.copyWith(
+        title: newTitle,
+        isEditing: false, // 편집 상태 종료
+      );
+
+      // UI 업데이트를 위해 리스너에게 알림
+      notifyListeners();
+
+      try {
+        // 그 후 비동기적으로 저장
+        final success = await _saveTasks();
+        if (!success) {
+          // 저장 실패 시 이전 상태로 롤백
+          _tasks[dateKey]![taskIndex] = oldTask;
+          notifyListeners();
+          return false;
+        }
+        return true;
+      } catch (e) {
+        // 예외 발생 시 이전 상태로 롤백
+        debugPrint('Error updating task: $e');
         _tasks[dateKey]![taskIndex] = oldTask;
         notifyListeners();
         return false;
       }
-
-      notifyListeners();
-      return true;
     }
     return false;
   }
@@ -190,6 +214,90 @@ class TaskProvider with ChangeNotifier {
       final oldTask = _tasks[dateKey]![taskIndex];
       _tasks[dateKey]![taskIndex] = oldTask.copyWith(isEditing: isEditing);
       notifyListeners();
+    }
+  }
+
+  Future<bool> saveTaskAndCloseEditor(String taskId, String newText) async {
+    // 먼저 편집 상태를 종료하여 UI 반응성 유지
+    final dateKey = _getDateKey(_selectedDate);
+    final taskIndex = _tasks[dateKey]?.indexWhere((t) => t.id == taskId) ?? -1;
+
+    if (taskIndex != -1) {
+      final oldTask = _tasks[dateKey]![taskIndex];
+
+      // 이미 편집 상태가 아니면 바로 성공 반환
+      if (!oldTask.isEditing) {
+        return true;
+      }
+
+      // 먼저 편집 상태만 종료하여 UI 업데이트
+      _tasks[dateKey]![taskIndex] = oldTask.copyWith(isEditing: false);
+      notifyListeners();
+
+      // 그 후 내용 업데이트 (별도 비동기 작업)
+      return updateTask(taskId, newText);
+    }
+
+    // 작업을 찾지 못한 경우에도 편집 상태 종료
+    setTaskEditing(taskId, false);
+    return true;
+  }
+
+  void closeAllTaskEditors() {
+    final dateKey = _getDateKey(_selectedDate);
+    if (_tasks.containsKey(dateKey)) {
+      bool hasChanges = false;
+      for (int i = 0; i < _tasks[dateKey]!.length; i++) {
+        final task = _tasks[dateKey]![i];
+        if (task.isEditing) {
+          _tasks[dateKey]![i] = task.copyWith(isEditing: false);
+          hasChanges = true;
+        }
+      }
+      if (hasChanges) {
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> saveAndCloseAllTaskEditors(
+      Map<String, TextEditingController> controllers) async {
+    final dateKey = _getDateKey(_selectedDate);
+    if (_tasks.containsKey(dateKey)) {
+      bool hasChanges = false;
+      List<Future<bool>> saveFutures = [];
+      Map<String, String> tasksToSave = {};
+
+      // 먼저 모든 편집 중인 작업 수집
+      for (int i = 0; i < _tasks[dateKey]!.length; i++) {
+        final task = _tasks[dateKey]![i];
+        if (task.isEditing) {
+          final controller = controllers[task.id];
+          if (controller != null) {
+            // 저장할 텍스트 캡처
+            tasksToSave[task.id] = controller.text;
+          }
+
+          // 즉시 편집 상태 종료 (UI 업데이트용)
+          _tasks[dateKey]![i] = task.copyWith(isEditing: false);
+          hasChanges = true;
+        }
+      }
+
+      // UI 즉시 업데이트
+      if (hasChanges) {
+        notifyListeners();
+      }
+
+      // 그 후 비동기적으로 각 작업 저장
+      for (final entry in tasksToSave.entries) {
+        saveFutures.add(updateTask(entry.key, entry.value));
+      }
+
+      // 모든 저장 작업 완료 대기
+      if (saveFutures.isNotEmpty) {
+        await Future.wait(saveFutures);
+      }
     }
   }
 
@@ -230,10 +338,31 @@ class TaskProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void removeTask(String taskId) {
+  Future<bool> removeTask(String taskId) async {
     final dateKey = _getDateKey(_selectedDate);
-    _tasks[dateKey]?.removeWhere((task) => task.id == taskId);
+    if (!_tasks.containsKey(dateKey)) return false;
+
+    // Find the task to delete
+    final taskIndex = _tasks[dateKey]!.indexWhere((task) => task.id == taskId);
+    if (taskIndex == -1) return false;
+
+    // Store the task before removing it
+    final taskToDelete = _tasks[dateKey]![taskIndex];
+
+    // Remove the task
+    _tasks[dateKey]!.removeAt(taskIndex);
+
+    // Save the changes
+    final success = await _saveTasks();
+    if (!success) {
+      // If saving failed, add the task back
+      _tasks[dateKey]!.add(taskToDelete);
+      notifyListeners();
+      return false;
+    }
+
     notifyListeners();
+    return true;
   }
 
   Future<void> clearAllTasks() async {
