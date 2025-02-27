@@ -36,6 +36,7 @@ class TimerProvider with ChangeNotifier {
   DateTime? _startTime;
   int _initialDuration = 1800; // 처음 설정된 시간
   final List<TimerRecord> _records = [];
+  bool _isTimerBeingRestored = false; // 타이머 복원 중 플래그
 
   TimerProvider() {
     _loadSettings();
@@ -105,7 +106,17 @@ class TimerProvider with ChangeNotifier {
     if (_status == TimerStatus.initial ||
         _status == TimerStatus.paused ||
         _status == TimerStatus.finished) {
+      // 이미 타이머가 실행 중인 경우 중복 실행 방지
+      if (_timer != null && _timer!.isActive) {
+        debugPrint('Timer is already running, not starting a new one');
+        return;
+      }
+
       _status = TimerStatus.running;
+
+      // Cancel any existing timer first to prevent multiple timers
+      _timer?.cancel();
+
       _timer = Timer.periodic(const Duration(seconds: 1), _tick);
       if (_title.trim().isEmpty) {
         _title = '무제';
@@ -151,8 +162,19 @@ class TimerProvider with ChangeNotifier {
   }
 
   void _tick(Timer timer) {
+    // 타이머 객체가 현재 타이머와 다른 경우 무시 (중복 타이머 방지)
+    if (_timer != timer) {
+      debugPrint('Ignoring tick from old timer');
+      timer.cancel();
+      return;
+    }
+
     if (_remainingTime > 0) {
       _remainingTime--;
+
+      // 웹에서 타이머가 두 배 빠르게 감소하는 문제 해결을 위한 디버그 로그
+      debugPrint('Timer tick: $_remainingTime seconds remaining');
+
       notifyListeners();
     } else {
       timer.cancel();
@@ -296,76 +318,86 @@ class TimerProvider with ChangeNotifier {
       int? initialDuration,
       int? remainingTime,
       bool finished = false}) async {
-    // 웹 환경에서 직접 파라미터가 전달된 경우
-    if (startTime != null && initialDuration != null && remainingTime != null) {
-      debugPrint(
-          'Restoring timer state from parameters: start=$startTime, initial=$initialDuration, remaining=$remainingTime, finished=$finished');
-      _startTime = startTime;
-      _initialDuration = initialDuration;
-      _remainingTime = remainingTime;
+    // 이미 복원 중인 경우 중복 실행 방지
+    if (_isTimerBeingRestored) return;
+    _isTimerBeingRestored = true;
 
-      if (finished) {
-        _status = TimerStatus.finished;
-      } else {
-        // 일시정지 상태로 복원 (start() 메소드에서 타이머 다시 시작)
-        _status = TimerStatus.paused;
+    try {
+      // 웹 환경에서 직접 파라미터가 전달된 경우
+      if (startTime != null &&
+          initialDuration != null &&
+          remainingTime != null) {
+        debugPrint(
+            'Restoring timer state from parameters: start=$startTime, initial=$initialDuration, remaining=$remainingTime, finished=$finished');
+        _startTime = startTime;
+        _initialDuration = initialDuration;
+        _remainingTime = remainingTime;
+
+        if (finished) {
+          _status = TimerStatus.finished;
+        } else {
+          // 일시정지 상태로 복원 (start() 메소드에서 타이머 다시 시작)
+          _status = TimerStatus.paused;
+        }
+
+        notifyListeners();
+        return;
       }
 
-      notifyListeners();
-      return;
-    }
+      // SharedPreferences에서 복원하는 기존 로직
+      try {
+        final stateString = _prefs.getString(_timerStateKey);
+        if (stateString == null || stateString.isEmpty) return;
 
-    // SharedPreferences에서 복원하는 기존 로직
-    try {
-      final stateString = _prefs.getString(_timerStateKey);
-      if (stateString == null || stateString.isEmpty) return;
+        // 문자열에서 Map으로 변환
+        final stateStr = stateString.replaceAll('{', '').replaceAll('}', '');
+        final statePairs = stateStr.split(',');
+        final Map<String, dynamic> state = {};
 
-      // 문자열에서 Map으로 변환
-      final stateStr = stateString.replaceAll('{', '').replaceAll('}', '');
-      final statePairs = stateStr.split(',');
-      final Map<String, dynamic> state = {};
+        for (final pair in statePairs) {
+          final keyValue = pair.trim().split(':');
+          if (keyValue.length == 2) {
+            final key = keyValue[0].trim().replaceAll("'", "");
+            final value = keyValue[1].trim();
 
-      for (final pair in statePairs) {
-        final keyValue = pair.trim().split(':');
-        if (keyValue.length == 2) {
-          final key = keyValue[0].trim().replaceAll("'", "");
-          final value = keyValue[1].trim();
-
-          if (key == 'status' ||
-              key == 'initialDuration' ||
-              key == 'remainingTime' ||
-              key == 'startTimeMillis') {
-            state[key] = int.tryParse(value) ?? 0;
-          } else if (key == 'title') {
-            state[key] = value.replaceAll("'", "");
+            if (key == 'status' ||
+                key == 'initialDuration' ||
+                key == 'remainingTime' ||
+                key == 'startTimeMillis') {
+              state[key] = int.tryParse(value) ?? 0;
+            } else if (key == 'title') {
+              state[key] = value.replaceAll("'", "");
+            }
           }
         }
+
+        // 상태 복원
+        final statusIndex = state['status'] as int;
+        _status = TimerStatus.values[statusIndex];
+        _title = state['title'] as String? ?? '무제';
+        _initialDuration = state['initialDuration'] as int? ?? 1800;
+        _remainingTime = state['remainingTime'] as int? ?? _initialDuration;
+
+        final startTimeMillis = state['startTimeMillis'] as int?;
+        if (startTimeMillis != null && startTimeMillis > 0) {
+          _startTime = DateTime.fromMillisecondsSinceEpoch(startTimeMillis);
+        }
+
+        // 실행 중이었던 타이머 상태 업데이트
+        if (_status == TimerStatus.running) {
+          updateTimerOnVisibilityChange();
+        }
+
+        debugPrint('Timer state restored: $_status, $_title, $_remainingTime');
+      } catch (e) {
+        debugPrint('Error restoring timer state: $e');
+        // 오류 발생 시 타이머 초기화
+        _status = TimerStatus.initial;
+        _remainingTime = _duration;
+        _startTime = null;
       }
-
-      // 상태 복원
-      final statusIndex = state['status'] as int;
-      _status = TimerStatus.values[statusIndex];
-      _title = state['title'] as String? ?? '무제';
-      _initialDuration = state['initialDuration'] as int? ?? 1800;
-      _remainingTime = state['remainingTime'] as int? ?? _initialDuration;
-
-      final startTimeMillis = state['startTimeMillis'] as int?;
-      if (startTimeMillis != null && startTimeMillis > 0) {
-        _startTime = DateTime.fromMillisecondsSinceEpoch(startTimeMillis);
-      }
-
-      // 실행 중이었던 타이머 상태 업데이트
-      if (_status == TimerStatus.running) {
-        updateTimerOnVisibilityChange();
-      }
-
-      debugPrint('Timer state restored: $_status, $_title, $_remainingTime');
-    } catch (e) {
-      debugPrint('Error restoring timer state: $e');
-      // 오류 발생 시 타이머 초기화
-      _status = TimerStatus.initial;
-      _remainingTime = _duration;
-      _startTime = null;
+    } finally {
+      _isTimerBeingRestored = false;
     }
   }
 

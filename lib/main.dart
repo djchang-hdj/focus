@@ -10,7 +10,7 @@ import 'package:focus/widgets/focus_timer.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:focus/web_utils.dart'
+import 'package:focus/web_utils_fixed.dart'
     if (dart.library.io) 'package:focus/non_web_utils.dart';
 
 void main() async {
