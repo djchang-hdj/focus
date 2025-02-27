@@ -582,6 +582,7 @@ class _FocusTimerState extends State<FocusTimer> {
     IconData icon,
   ) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
           icon,
@@ -596,11 +597,15 @@ class _FocusTimerState extends State<FocusTimer> {
               ),
         ),
         const SizedBox(width: 4),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+        Flexible(
+          child: Text(
+            value,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+            softWrap: true,
+            overflow: TextOverflow.visible,
+          ),
         ),
       ],
     );
