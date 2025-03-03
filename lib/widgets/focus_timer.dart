@@ -1,6 +1,83 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/timer_provider.dart';
+import 'dart:math' show pi;
+
+// 반원형 프로그레스 페인터
+class SemiCircleProgressPainter extends CustomPainter {
+  final double progress;
+  final bool isNearEnd;
+  final bool isFinished;
+  final ColorScheme colorScheme;
+
+  SemiCircleProgressPainter({
+    required this.progress,
+    required this.isNearEnd,
+    required this.isFinished,
+    required this.colorScheme,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 24.0
+      ..strokeCap = StrokeCap.round;
+
+    final center = Offset(size.width / 2, size.height);
+    final radius = (size.height - paint.strokeWidth / 2) * 0.7;
+
+    // 배경 반원
+    paint.color = colorScheme.surfaceContainerHighest;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -pi,
+      pi,
+      false,
+      paint,
+    );
+
+    // 프로그레스 반원
+    if (isNearEnd && !isFinished) {
+      // 무지개 그래디언트
+      paint.shader = SweepGradient(
+        colors: const [
+          Colors.red,
+          Colors.orange,
+          Colors.yellow,
+          Colors.green,
+          Colors.blue,
+          Colors.indigo,
+          Colors.purple,
+          Colors.red, // 부드러운 전환을 위해 처음 색상 반복
+        ],
+        stops: const [0.0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.0],
+        startAngle: 0,
+        endAngle: pi,
+        tileMode: TileMode.clamp,
+        transform: GradientRotation(pi),
+      ).createShader(Rect.fromCircle(center: center, radius: radius));
+    } else {
+      paint.shader = null;
+      paint.color = isFinished ? colorScheme.tertiary : colorScheme.primary;
+    }
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -pi,
+      pi * (1 - progress), // 반원에서 줄어드는 방향으로 다시 변경
+      false,
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(SemiCircleProgressPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.isNearEnd != isNearEnd ||
+        oldDelegate.isFinished != isFinished;
+  }
+}
 
 class FocusTimer extends StatefulWidget {
   const FocusTimer({super.key});
@@ -132,60 +209,37 @@ class _FocusTimerState extends State<FocusTimer> {
 
     return ConstrainedBox(
       constraints: const BoxConstraints(
-        maxWidth: 300,
-        maxHeight: 300,
+        maxWidth: 450, // 1.5배 증가
+        maxHeight: 225, // 1.5배 증가
       ),
-      child: AspectRatio(
-        aspectRatio: 1,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // 배경 원
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // 진행 상태 애니메이션
+          TweenAnimationBuilder<double>(
+            tween: Tween<double>(
+              begin: 0,
+              end: isFinished ? 1.0 : timerProvider.progress,
             ),
-            // 진행 상태 애니메이션
-            TweenAnimationBuilder<double>(
-              tween: Tween<double>(
-                begin: 0,
-                end: isFinished ? 1.0 : timerProvider.progress,
-              ),
-              duration: const Duration(milliseconds: 300),
-              builder: (context, value, _) {
-                return SizedBox.expand(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: CircularProgressIndicator(
-                      value: value,
-                      strokeWidth: 24,
-                      backgroundColor: Colors.transparent,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        isFinished
-                            ? Theme.of(context).colorScheme.tertiary
-                            : isNearEnd
-                                ? Theme.of(context).colorScheme.error
-                                : Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-            // 시간 표시
-            Column(
+            duration: const Duration(milliseconds: 300),
+            builder: (context, value, _) {
+              return CustomPaint(
+                size: const Size(450, 225), // 1.5배 증가
+                painter: SemiCircleProgressPainter(
+                  progress: value,
+                  isNearEnd: isNearEnd,
+                  isFinished: isFinished,
+                  colorScheme: Theme.of(context).colorScheme,
+                ),
+              );
+            },
+          ),
+          // 시간 표시
+          Positioned(
+            bottom: -10,
+            child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
-                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 72,
-                        letterSpacing: -1,
-                      ),
-                ),
                 if (isFinished)
                   Text(
                     '완료!',
@@ -194,10 +248,18 @@ class _FocusTimerState extends State<FocusTimer> {
                           fontWeight: FontWeight.w600,
                         ),
                   ),
+                Text(
+                  '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
+                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 72,
+                        letterSpacing: -1,
+                      ),
+                ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
