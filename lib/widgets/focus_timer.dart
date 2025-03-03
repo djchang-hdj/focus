@@ -43,29 +43,33 @@ class SemiCircleProgressPainter extends CustomPainter {
       paint.shader = SweepGradient(
         colors: const [
           Colors.red,
-          Colors.orange,
-          Colors.yellow,
-          Colors.green,
-          Colors.blue,
-          Colors.indigo,
           Colors.purple,
+          Colors.indigo,
+          Colors.blue,
+          Colors.green,
+          Colors.yellow,
+          Colors.orange,
           Colors.red, // 부드러운 전환을 위해 처음 색상 반복
         ],
         stops: const [0.0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.0],
-        startAngle: 0,
-        endAngle: pi,
+        startAngle: -pi,
+        endAngle: 0,
         tileMode: TileMode.clamp,
-        transform: GradientRotation(pi),
+        transform: GradientRotation(-pi / 2),
       ).createShader(Rect.fromCircle(center: center, radius: radius));
     } else {
       paint.shader = null;
       paint.color = isFinished ? colorScheme.tertiary : colorScheme.primary;
     }
 
+    // 프로그레스 각도 계산 수정
+    final startAngle = -pi;
+    final sweepAngle = pi * progress; // 양수 각도로 변경하여 오른쪽에서 왼쪽으로 진행
+
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
-      -pi,
-      pi * (1 - progress), // 반원에서 줄어드는 방향으로 다시 변경
+      startAngle,
+      sweepAngle,
       false,
       paint,
     );
