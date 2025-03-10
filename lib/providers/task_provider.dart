@@ -399,4 +399,40 @@ class TaskProvider with ChangeNotifier {
     _saveTasks(); // 변경된 순서를 저장
     notifyListeners();
   }
+
+  Future<bool> moveTaskToDate(String taskId, DateTime newDate) async {
+    final currentDateKey = _getDateKey(_selectedDate);
+    final newDateKey = _getDateKey(newDate);
+
+    // 현재 날짜에서 작업 찾기
+    final taskIndex =
+        _tasks[currentDateKey]?.indexWhere((t) => t.id == taskId) ?? -1;
+    if (taskIndex == -1) return false;
+
+    // 작업 복사
+    final task = _tasks[currentDateKey]![taskIndex];
+    final movedTask = task.copyWith(date: newDate);
+
+    // 새 날짜의 작업 목록 초기화 (없는 경우)
+    if (!_tasks.containsKey(newDateKey)) {
+      _tasks[newDateKey] = [];
+    }
+
+    // 작업을 새 날짜로 이동
+    _tasks[newDateKey]!.add(movedTask);
+    _tasks[currentDateKey]!.removeAt(taskIndex);
+
+    // 변경사항 저장
+    final success = await _saveTasks();
+    if (!success) {
+      // 저장 실패 시 변경 취소
+      _tasks[currentDateKey]!.insert(taskIndex, task);
+      _tasks[newDateKey]?.remove(movedTask);
+      notifyListeners();
+      return false;
+    }
+
+    notifyListeners();
+    return true;
+  }
 }

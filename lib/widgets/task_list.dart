@@ -378,9 +378,11 @@ class _TaskListState extends State<TaskList> {
       key: ValueKey(task.id),
       margin: const EdgeInsets.symmetric(vertical: 4.0),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16.0,
-          vertical: 4.8,
+        contentPadding: const EdgeInsets.only(
+          left: 16.0,
+          right: 8.0,
+          top: 4.8,
+          bottom: 4.8,
         ),
         leading: Checkbox(
           value: task.isCompleted,
@@ -496,15 +498,122 @@ class _TaskListState extends State<TaskList> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!task.isCompleted)
+            if (!task.isCompleted) ...[
               IconButton(
-                icon: const Icon(Icons.timer),
+                icon: const Icon(Icons.timer, size: 20),
+                style: IconButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(28, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  foregroundColor: Theme.of(context).colorScheme.primary,
+                ),
                 onPressed: () {
                   startTimer(task.title);
                 },
               ),
+              const SizedBox(width: 0),
+              IconButton(
+                icon: const Icon(Icons.chevron_left, size: 20),
+                tooltip: '이전 날로 이동',
+                style: IconButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(28, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  foregroundColor:
+                      Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                ),
+                onPressed: () async {
+                  final previousDate = taskProvider.selectedDate
+                      .subtract(const Duration(days: 1));
+                  await taskProvider.moveTaskToDate(task.id, previousDate);
+
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                              '작업을 ${DateFormat('M월 d일', 'ko_KR').format(previousDate)}로 이동했습니다'),
+                        ],
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      duration: const Duration(seconds: 2),
+                      action: SnackBarAction(
+                        label: '실행 취소',
+                        onPressed: () {
+                          taskProvider.moveTaskToDate(
+                              task.id, taskProvider.selectedDate);
+                        },
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 0),
+              IconButton(
+                icon: const Icon(Icons.chevron_right, size: 20),
+                tooltip: '다음 날로 이동',
+                style: IconButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(28, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  foregroundColor:
+                      Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                ),
+                onPressed: () async {
+                  final nextDate =
+                      taskProvider.selectedDate.add(const Duration(days: 1));
+                  await taskProvider.moveTaskToDate(task.id, nextDate);
+
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                              '작업을 ${DateFormat('M월 d일', 'ko_KR').format(nextDate)}로 이동했습니다'),
+                        ],
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                      duration: const Duration(seconds: 2),
+                      action: SnackBarAction(
+                        label: '실행 취소',
+                        onPressed: () {
+                          taskProvider.moveTaskToDate(
+                              task.id, taskProvider.selectedDate);
+                        },
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+            if (!task.isCompleted) const SizedBox(width: 0),
             IconButton(
-              icon: const Icon(Icons.delete),
+              icon: const Icon(Icons.delete, size: 20),
+              style: IconButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(28, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                foregroundColor:
+                    Theme.of(context).colorScheme.error.withOpacity(0.7),
+              ),
               onPressed: () async {
                 // 작업이 제거될 때 포커스 노드와 컨트롤러 정리
                 final focusNode = _editFocusNodes.remove(task.id);
