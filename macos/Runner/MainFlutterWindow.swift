@@ -13,6 +13,9 @@ class MainFlutterWindow: NSWindow {
     self.isMovableByWindowBackground = true
     self.titleVisibility = .hidden  // 앱 제목 숨기기
     
+    // 항상 최상위에 표시되도록 설정
+    self.level = .floating
+    
     // 툴바 설정
     let toolbar = NSToolbar(identifier: NSToolbar.Identifier("MainToolbar"))
     toolbar.showsBaselineSeparator = false

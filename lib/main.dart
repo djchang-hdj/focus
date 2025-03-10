@@ -165,7 +165,7 @@ class _MacosScaffoldState extends State<MacosScaffold> {
                         const AppHeader(),
                         const SizedBox(height: 20),
                         TaskList(onTimerStart: scrollToTimer),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 16),
                         FocusTimer(key: _timerKey),
                         const SizedBox(height: 32),
                         // 금기사항 섹션

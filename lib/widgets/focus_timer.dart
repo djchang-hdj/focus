@@ -25,7 +25,7 @@ class SemiCircleProgressPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     final center = Offset(size.width / 2, size.height);
-    final radius = (size.height - paint.strokeWidth / 2) * 0.7;
+    final radius = (size.height - paint.strokeWidth / 2) * 0.6;
 
     // 배경 반원
     paint.color = colorScheme.surfaceContainerHighest;
@@ -128,7 +128,7 @@ class _FocusTimerState extends State<FocusTimer> {
             ),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -136,24 +136,24 @@ class _FocusTimerState extends State<FocusTimer> {
                 if (timerProvider.status != TimerStatus.initial)
                   _buildCurrentWorkInfo(context, timerProvider),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
                 // 타이머 원형 프로그레스
                 _buildTimerProgress(context, timerProvider, minutes, seconds),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
                 // 작업 제목 입력 필드와 컨트롤 버튼들
                 _buildControls(context, timerProvider),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
                 // 시간 조절 버튼들
                 _buildDurationAdjuster(context, timerProvider),
 
                 // 타이머 기록
                 if (timerProvider.records.isNotEmpty) ...[
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
                   _buildTimerRecords(context, timerProvider),
                 ],
               ],

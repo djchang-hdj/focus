@@ -621,7 +621,7 @@ class _TaskListState extends State<TaskList> {
 
   Widget _buildAddTaskField(BuildContext context, TaskProvider taskProvider) {
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(8.0),
       child: Row(
         children: [
           Expanded(
