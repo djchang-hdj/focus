@@ -25,9 +25,17 @@ class TaskProvider with ChangeNotifier {
   DateTime get selectedDate => _selectedDate;
   List<Task> get currentTasks {
     final tasks = _tasks[_getDateKey(_selectedDate)] ?? [];
+
+    // 완료 상태와 order로 정렬
     return tasks
-      ..sort((a, b) =>
-          a.isCompleted == b.isCompleted ? 0 : (a.isCompleted ? -1 : 1));
+      ..sort((a, b) {
+        // 먼저 완료 상태로 정렬
+        if (a.isCompleted != b.isCompleted) {
+          return a.isCompleted ? -1 : 1; // 완료된 항목이 위로
+        }
+        // 같은 완료 상태 내에서는 order로 정렬
+        return a.order.compareTo(b.order);
+      });
   }
 
   void selectDate(DateTime date) {
@@ -99,11 +107,17 @@ class TaskProvider with ChangeNotifier {
       _tasks[dateKey] = [];
     }
 
+    // 새 작업의 order 계산
+    final maxOrder = _tasks[dateKey]!.isEmpty
+        ? 0
+        : _tasks[dateKey]!.map((t) => t.order).reduce((a, b) => a > b ? a : b);
+
     _tasks[dateKey]!.add(Task(
       id: uuid.v4(),
       title: title,
       isCompleted: false,
       date: _selectedDate,
+      order: maxOrder + 10, // 새 작업은 항상 맨 아래에 추가
     ));
 
     final success = await _saveTasks();
@@ -240,22 +254,58 @@ class TaskProvider with ChangeNotifier {
       return false;
     }
 
-    if (newIndex > oldIndex) {
-      newIndex -= 1;
-    }
-
+    final tasks = currentTasks;
     if (oldIndex < 0 ||
-        oldIndex >= _tasks[dateKey]!.length ||
+        oldIndex >= tasks.length ||
         newIndex < 0 ||
-        newIndex >= _tasks[dateKey]!.length) {
+        newIndex >= tasks.length) {
       return false;
     }
 
+    // 이동할 작업
+    final taskToMove = tasks[oldIndex];
+    final isCompleted = taskToMove.isCompleted;
+
+    // 같은 완료 상태를 가진 작업들만 필터링
+    final sameCompletionTasks =
+        tasks.where((t) => t.isCompleted == isCompleted).toList();
+
+    // 이전 상태 저장
     final List<Task> previousTasks = List.from(_tasks[dateKey]!);
 
-    final task = _tasks[dateKey]!.removeAt(oldIndex);
-    _tasks[dateKey]!.insert(newIndex, task);
+    // 모든 작업의 order 재조정
+    for (var i = 0; i < _tasks[dateKey]!.length; i++) {
+      _tasks[dateKey]![i] = _tasks[dateKey]![i].copyWith(order: i * 10);
+    }
 
+    // 이동할 작업의 새 order 계산
+    int newOrder;
+    if (newIndex == 0) {
+      // 맨 위로 이동
+      newOrder = _tasks[dateKey]!.first.order - 10;
+    } else if (newIndex >= _tasks[dateKey]!.length) {
+      // 맨 아래로 이동
+      newOrder = _tasks[dateKey]!.last.order + 10;
+    } else {
+      // 중간으로 이동
+      final prevOrder = _tasks[dateKey]![newIndex - 1].order;
+      final nextOrder = _tasks[dateKey]![newIndex].order;
+      newOrder = prevOrder + ((nextOrder - prevOrder) ~/ 2);
+    }
+
+    // 작업 이동
+    _tasks[dateKey]!.removeWhere((t) => t.id == taskToMove.id);
+    final movedTask = taskToMove.copyWith(order: newOrder);
+
+    // 새 위치에 삽입
+    var insertIndex = 0;
+    while (insertIndex < _tasks[dateKey]!.length &&
+        _tasks[dateKey]![insertIndex].order < newOrder) {
+      insertIndex++;
+    }
+    _tasks[dateKey]!.insert(insertIndex, movedTask);
+
+    // 변경사항 저장
     final success = await _saveTasks();
     if (!success) {
       _tasks[dateKey] = previousTasks;

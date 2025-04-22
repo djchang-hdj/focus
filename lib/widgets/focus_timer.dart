@@ -327,9 +327,16 @@ class _FocusTimerState extends State<FocusTimer> {
                           color: colorScheme.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: colorScheme.outlineVariant.withOpacity(0.1),
+                            color: colorScheme.outlineVariant.withOpacity(0.3),
                             width: 1,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colorScheme.shadow.withOpacity(0.05),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -935,9 +942,9 @@ class _FocusTimerState extends State<FocusTimer> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: record.isCompleted
-                            ? colorScheme.primary.withOpacity(0.2)
-                            : colorScheme.error.withOpacity(0.2),
-                        width: 1,
+                            ? const Color(0xFFFF9100).withOpacity(0.5)
+                            : colorScheme.outlineVariant.withOpacity(0.3),
+                        width: 1.5,
                       ),
                     ),
                     child: Column(
@@ -983,6 +990,60 @@ class _FocusTimerState extends State<FocusTimer> {
                                             : colorScheme.error,
                                       ),
                                     ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text('기록 삭제'),
+                                          content: Text(
+                                              '${record.title} 기록을 삭제하시겠습니까?'),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(context),
+                                              child: const Text('취소'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () {
+                                                timerProvider.deleteRecord(
+                                                    dateKey, index);
+                                                Navigator.pop(context);
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                        '${record.title} 기록이 삭제되었습니다.'),
+                                                    duration: const Duration(
+                                                        seconds: 2),
+                                                    behavior: SnackBarBehavior
+                                                        .floating,
+                                                  ),
+                                                );
+                                              },
+                                              style: TextButton.styleFrom(
+                                                foregroundColor:
+                                                    colorScheme.error,
+                                              ),
+                                              child: const Text('삭제'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                    icon: Icon(
+                                      Icons.close,
+                                      size: 16,
+                                      color: colorScheme.error.withOpacity(0.7),
+                                    ),
+                                    style: IconButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    tooltip: '기록 삭제',
                                   ),
                                 ],
                               ),

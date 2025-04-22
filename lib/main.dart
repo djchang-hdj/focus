@@ -131,6 +131,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -143,68 +145,156 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 새로운 헤더 위젯
+                  // 헤더 위젯
                   const AppHeader(),
 
+                  // 메인 콘텐츠 영역
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const SizedBox(height: 16),
-                        // 할 일 관리 섹션
-                        TaskList(onTimerStart: scrollToTimer),
+                        const SizedBox(height: 24),
 
-                        const SizedBox(height: 16),
-                        // 포모도로 타이머 섹션
-                        FocusTimer(key: _timerKey),
-
-                        const SizedBox(height: 16),
-                        // 금기사항 섹션
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.warning_amber_rounded,
-                                      color:
-                                          Theme.of(context).colorScheme.error,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '집중을 유지하기 위해',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleLarge,
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                _buildProhibitedItem(
-                                  context,
-                                  Icons.play_circle_outline,
-                                  '유튜브, 넷플릭스, OTT 안 보기',
-                                ),
-                                const SizedBox(height: 8),
-                                _buildProhibitedItem(
-                                  context,
-                                  Icons.forum_outlined,
-                                  '커뮤니티 들어가지 않기',
-                                ),
-                                const SizedBox(height: 8),
-                                _buildProhibitedItem(
-                                  context,
-                                  Icons.public_outlined,
-                                  '불필요한 웹서핑 하지 말기',
-                                ),
+                        // 할 일 관리 섹션 - 구별되는 색상 배경
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                colorScheme.primaryContainer.withOpacity(0.6),
+                                colorScheme.primaryContainer.withOpacity(0.3),
                               ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color:
+                                  colorScheme.outlineVariant.withOpacity(0.5),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Card(
+                            margin: const EdgeInsets.all(2),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: TaskList(onTimerStart: scrollToTimer),
                             ),
                           ),
                         ),
+
+                        const SizedBox(height: 24),
+
+                        // 타이머 섹션 - 구별되는 색상 배경
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                colorScheme.secondary.withOpacity(0.3),
+                                colorScheme.tertiary.withOpacity(0.3),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color:
+                                  colorScheme.outlineVariant.withOpacity(0.5),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Card(
+                            margin: const EdgeInsets.all(2),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: FocusTimer(key: _timerKey),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // 금기사항 섹션 - 구별되는 색상 배경
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                colorScheme.errorContainer.withOpacity(0.6),
+                                colorScheme.errorContainer.withOpacity(0.3),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color:
+                                  colorScheme.outlineVariant.withOpacity(0.5),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Card(
+                            margin: const EdgeInsets.all(2),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.warning_amber_rounded,
+                                        color: colorScheme.error,
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        '집중을 유지하기 위해',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: colorScheme.onSurface,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildProhibitedItem(
+                                    context,
+                                    Icons.play_circle_outline,
+                                    '유튜브, 넷플릭스, OTT 안 보기',
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _buildProhibitedItem(
+                                    context,
+                                    Icons.forum_outlined,
+                                    '커뮤니티 들어가지 않기',
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _buildProhibitedItem(
+                                    context,
+                                    Icons.public_outlined,
+                                    '불필요한 웹서핑 하지 말기',
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
                         const SizedBox(height: 32),
                       ],
                     ),
@@ -223,23 +313,37 @@ class _HomeScreenState extends State<HomeScreen> {
     IconData icon,
     String text,
   ) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 20,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withOpacity(0.5),
+          width: 1.5,
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: colorScheme.error,
           ),
-        ),
-      ],
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -253,101 +357,346 @@ class AppHeader extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final isPlatformDark = theme.brightness == Brightness.dark;
 
-    return Card(
-      elevation: 0,
-      color: colorScheme.surface,
+    return Container(
       margin: const EdgeInsets.all(16),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withOpacity(0.1),
-          width: 1,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: colorScheme.surface,
+        border: Border.all(
+          color: colorScheme.outlineVariant.withOpacity(0.5),
+          width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 헤더 상단 영역
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // 로고 및 타이틀
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.auto_awesome,
-                    color: colorScheme.primary,
-                    size: 22,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 헤더 상단 영역 (타이틀 및 버튼)
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer.withOpacity(0.3),
+                border: Border(
+                  bottom: BorderSide(
+                    color: colorScheme.outlineVariant.withOpacity(0.2),
+                    width: 1,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    '생각하고 말하자',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                      letterSpacing: -0.5,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // 로고 및 타이틀
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.purple.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.auto_awesome,
+                      color: colorScheme.primary,
+                      size: 24,
                     ),
                   ),
-                ),
-                // 데이터 삭제 버튼
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => _showClearDataDialog(context),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.delete_forever_rounded,
-                            color: colorScheme.error,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '초기화',
-                            style: theme.textTheme.labelMedium?.copyWith(
-                              color: colorScheme.error,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      '생각하고 말하자',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                        letterSpacing: -0.5,
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                // 테마 토글 버튼
-                Consumer<ThemeProvider>(
-                  builder: (context, themeProvider, _) => _buildThemeToggle(
-                    context,
-                    isPlatformDark,
-                    themeProvider,
+                  // 데이터 삭제 버튼
+                  _buildHeaderButton(
+                    context: context,
+                    icon: Icons.delete_forever_rounded,
+                    label: '',
+                    color: colorScheme.error,
+                    onTap: () => _showClearDataDialog(context),
                   ),
+                  const SizedBox(width: 8),
+                  // 테마 토글 버튼
+                  Consumer<ThemeProvider>(
+                    builder: (context, themeProvider, _) => _buildThemeToggle(
+                      context,
+                      isPlatformDark,
+                      themeProvider,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // 동기부여 문구 섹션
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              border: Border(
+                bottom: BorderSide(
+                  color: colorScheme.outlineVariant.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: colorScheme.outlineVariant.withOpacity(0.5),
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: colorScheme.secondary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: colorScheme.secondary.withOpacity(0.5),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: StreamBuilder<int>(
+                      stream: Stream.periodic(
+                          const Duration(seconds: 10), (i) => i % 4),
+                      builder: (context, snapshot) {
+                        final icons = [
+                          Icons.update_disabled_outlined,
+                          Icons.format_list_numbered_outlined,
+                          Icons.bolt_outlined,
+                          Icons.calendar_today_outlined,
+                        ];
+
+                        return Icon(
+                          icons[snapshot.data ?? 0],
+                          color: colorScheme.secondary,
+                          size: 22,
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: StreamBuilder<int>(
+                      stream: Stream.periodic(
+                          const Duration(seconds: 10), (i) => i % 4),
+                      builder: (context, snapshot) {
+                        final quotes = [
+                          "미래의 나에게 기대를 걸지 않는다",
+                          "덩어리로 하지 말고 과정을 분해하라",
+                          "막상 해보면 금방 끝나는 일이 많다",
+                          "하루 물림이 열흘 간다",
+                        ];
+
+                        return Text(
+                          quotes[snapshot.data ?? 0],
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: colorScheme.onSurface,
+                            height: 1.3,
+                            letterSpacing: -0.3,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // 오늘의 통계
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 12),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.insights_rounded,
+                        size: 16,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '오늘의 통계',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Consumer<TaskProvider>(
+                  builder: (context, taskProvider, _) {
+                    final completionRate =
+                        (taskProvider.completionRate * 100).toStringAsFixed(1);
+                    final totalTasks = taskProvider.currentTasks.length;
+                    final completedTasks = taskProvider.currentTasks
+                        .where((task) => task.isCompleted)
+                        .length;
+
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color:
+                                    colorScheme.outlineVariant.withOpacity(0.5),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.tertiary
+                                            .withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: colorScheme.tertiary
+                                              .withOpacity(0.5),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.analytics_outlined,
+                                        size: 14,
+                                        color: colorScheme.tertiary,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '오늘의 달성률',
+                                      style:
+                                          theme.textTheme.labelMedium?.copyWith(
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  '$completionRate%',
+                                  style:
+                                      theme.textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.onSurface,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color:
+                                    colorScheme.outlineVariant.withOpacity(0.5),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.tertiary
+                                            .withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(
+                                          color: colorScheme.tertiary
+                                              .withOpacity(0.5),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.task_alt_outlined,
+                                        size: 14,
+                                        color: colorScheme.tertiary,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '완료한 일',
+                                      style:
+                                          theme.textTheme.labelMedium?.copyWith(
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  '$completedTasks / $totalTasks',
+                                  style:
+                                      theme.textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.onSurface,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),
-
-            const SizedBox(height: 24),
-
-            // 동기부여 문구 섹션
-            _buildMotivationalQuote(context),
-
-            const SizedBox(height: 24),
-
-            // 오늘의 통계
-            _buildTodayStats(context),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -367,9 +716,10 @@ class AppHeader extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
+            color: colorScheme.primary.withOpacity(0.1),
             border: Border.all(
-              color: colorScheme.outlineVariant,
-              width: 1,
+              color: colorScheme.primary.withOpacity(0.5),
+              width: 1.5,
             ),
             borderRadius: BorderRadius.circular(8),
           ),
@@ -396,176 +746,47 @@ class AppHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildMotivationalQuote(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return StreamBuilder<int>(
-      stream: Stream.periodic(const Duration(seconds: 10), (i) => i % 4),
-      builder: (context, snapshot) {
-        final quotes = [
-          QuoteData(
-            text: "미래의 나에게 기대를 걸지 않는다",
-            icon: Icons.update_disabled_outlined,
-          ),
-          QuoteData(
-            text: "덩어리로 하지 말고 과정을 분해하라",
-            icon: Icons.format_list_numbered_outlined,
-          ),
-          QuoteData(
-            text: "막상 해보면 금방 끝나는 일이 많다",
-            icon: Icons.bolt_outlined,
-          ),
-          QuoteData(
-            text: "하루 물림이 열흘 간다",
-            icon: Icons.calendar_today_outlined,
-          ),
-        ];
-
-        final currentQuote = quotes[snapshot.data ?? 0];
-
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+  Widget _buildHeaderButton({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                colorScheme.primary.withAlpha(38),
-                colorScheme.secondary.withAlpha(38),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(12),
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: colorScheme.primary.withAlpha(51),
-              width: 1,
+              color: color.withOpacity(0.5),
+              width: 1.5,
             ),
           ),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withAlpha(38),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: colorScheme.primary.withAlpha(77),
-                    width: 1,
-                  ),
-                ),
-                child: Icon(
-                  currentQuote.icon,
-                  color: colorScheme.primary,
-                  size: 24,
-                ),
+              Icon(
+                icon,
+                color: color,
+                size: 18,
               ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Text(
-                  currentQuote.text,
-                  style: textTheme.titleMedium?.copyWith(
-                    color: colorScheme.onSurface,
-                    height: 1.3,
-                    letterSpacing: -0.3,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildTodayStats(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Consumer<TaskProvider>(
-      builder: (context, taskProvider, _) {
-        final completionRate =
-            (taskProvider.completionRate * 100).toStringAsFixed(1);
-        final totalTasks = taskProvider.currentTasks.length;
-        final completedTasks =
-            taskProvider.currentTasks.where((task) => task.isCompleted).length;
-
-        return Row(
-          children: [
-            _buildStatCard(
-              context,
-              '오늘의 달성률',
-              '$completionRate%',
-              Icons.analytics_outlined,
-            ),
-            const SizedBox(width: 16),
-            _buildStatCard(
-              context,
-              '완료한 일',
-              '$completedTasks / $totalTasks',
-              Icons.task_alt_outlined,
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildStatCard(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon,
-  ) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(0.1),
-            width: 1,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Icon(
-                    icon,
-                    size: 14,
-                    color: colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(width: 8),
+              if (label.isNotEmpty) ...[
+                const SizedBox(width: 4),
                 Text(
                   label,
-                  style: textTheme.labelMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w500,
+                      ),
                 ),
               ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-                letterSpacing: -0.5,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

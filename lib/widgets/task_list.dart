@@ -785,12 +785,53 @@ class _TaskListState extends State<TaskList> {
 
   void startTimer(String taskTitle) {
     final timerProvider = context.read<TimerProvider>();
-    if (timerProvider.status == TimerStatus.finished) {
-      timerProvider.reset();
+
+    if (timerProvider.status == TimerStatus.running) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('타이머 전환'),
+          content: const Text('현재 실행 중인 타이머가 있습니다. 어떻게 하시겠습니까?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                final log = timerProvider.getTimerLog();
+                timerProvider.reset();
+                timerProvider.setTitle(taskTitle);
+                timerProvider.start();
+                widget.onTimerStart();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      log,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                    duration: const Duration(seconds: 5),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              child: const Text('기존 타이머 중단, 새로운 작업 시작'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소'),
+            ),
+          ],
+        ),
+      );
+    } else {
+      if (timerProvider.status == TimerStatus.finished) {
+        timerProvider.reset();
+      }
+      timerProvider.setTitle(taskTitle);
+      timerProvider.start();
+      widget.onTimerStart();
     }
-    timerProvider.setTitle(taskTitle);
-    timerProvider.start();
-    widget.onTimerStart();
   }
 
   Widget _buildAddTaskField(BuildContext context, TaskProvider taskProvider) {

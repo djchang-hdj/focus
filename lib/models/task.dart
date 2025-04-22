@@ -5,6 +5,7 @@ class Task {
   final DateTime date;
   bool isEditing;
   bool isHovered;
+  int order;
 
   Task({
     required this.id,
@@ -13,6 +14,7 @@ class Task {
     required this.date,
     this.isEditing = false,
     this.isHovered = false,
+    this.order = 0,
   });
 
   Task copyWith({
@@ -22,6 +24,7 @@ class Task {
     DateTime? date,
     bool? isEditing,
     bool? isHovered,
+    int? order,
   }) {
     return Task(
       id: id ?? this.id,
@@ -30,6 +33,7 @@ class Task {
       date: date ?? this.date,
       isEditing: isEditing ?? this.isEditing,
       isHovered: isHovered ?? this.isHovered,
+      order: order ?? this.order,
     );
   }
 
@@ -40,6 +44,7 @@ class Task {
       'isCompleted': isCompleted,
       'date': date.toIso8601String(),
       'isEditing': isEditing,
+      'order': order,
     };
   }
 
@@ -51,6 +56,7 @@ class Task {
       date: DateTime.parse(json['date']),
       isEditing: json['isEditing'] ?? false,
       isHovered: false,
+      order: json['order'] as int? ?? 0,
     );
   }
 }
