@@ -53,6 +53,19 @@ class _TaskListState extends State<TaskList> {
                 ),
               ),
             _buildAddTaskField(context, taskProvider),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: TextButton.icon(
+                onPressed: () {
+                  _addDefaultTasks(taskProvider);
+                },
+                icon: const Icon(Icons.add_task),
+                label: const Text('기본 할일 추가하기'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ),
           ],
         );
       },
@@ -198,7 +211,7 @@ class _TaskListState extends State<TaskList> {
           ),
           const SizedBox(height: 8),
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             child: LinearProgressIndicator(
               value: taskProvider.completionRate,
               minHeight: 10,
@@ -355,7 +368,7 @@ class _TaskListState extends State<TaskList> {
               decoration: InputDecoration(
                 hintText: '새로운 할 일 추가',
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 20,

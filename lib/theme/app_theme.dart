@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // 기본 색상 정의
@@ -10,20 +9,24 @@ class AppTheme {
 
   // 공통 테마 데이터
   static ThemeData _baseTheme(ColorScheme colorScheme) {
-    final textTheme = GoogleFonts.notoSansTextTheme().copyWith(
-      displayLarge: GoogleFonts.notoSans(
+    final textTheme = TextTheme(
+      displayLarge: const TextStyle(
+        fontFamily: 'NotoSans',
         fontSize: 32,
         fontWeight: FontWeight.bold,
       ),
-      displayMedium: GoogleFonts.notoSans(
+      displayMedium: const TextStyle(
+        fontFamily: 'NotoSans',
         fontSize: 28,
         fontWeight: FontWeight.bold,
       ),
-      titleLarge: GoogleFonts.notoSans(
+      titleLarge: const TextStyle(
+        fontFamily: 'NotoSans',
         fontSize: 22,
         fontWeight: FontWeight.w600,
       ),
-      bodyLarge: GoogleFonts.notoSans(
+      bodyLarge: const TextStyle(
+        fontFamily: 'NotoSans',
         fontSize: 16,
         height: 1.5,
       ),
@@ -33,12 +36,13 @@ class AppTheme {
       colorScheme: colorScheme,
       useMaterial3: true,
       textTheme: textTheme,
+      fontFamily: 'NotoSans',
 
       // Card 테마
       cardTheme: CardTheme(
         elevation: 2,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
         ),
         margin: const EdgeInsets.symmetric(
           horizontal: 16,
@@ -68,6 +72,27 @@ class AppTheme {
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 12,
+        ),
+      ),
+
+      // FAB 테마
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+
+      // 스낵바 테마
+      snackBarTheme: SnackBarThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+
+      // 다이얼로그 테마
+      dialogTheme: DialogTheme(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
     );
