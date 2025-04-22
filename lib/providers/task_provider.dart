@@ -152,6 +152,55 @@ class TaskProvider with ChangeNotifier {
     return true;
   }
 
+  Future<bool> moveTaskToDate(String taskId, DateTime targetDate) async {
+    final currentDateKey = _getDateKey(_selectedDate);
+    final targetDateKey = _getDateKey(targetDate);
+
+    final taskIndex =
+        _tasks[currentDateKey]?.indexWhere((t) => t.id == taskId) ?? -1;
+
+    if (taskIndex == -1) return false;
+
+    final taskToMove = _tasks[currentDateKey]![taskIndex];
+
+    if (!_tasks.containsKey(targetDateKey)) {
+      _tasks[targetDateKey] = [];
+    }
+
+    final duplicateTaskIndex =
+        _tasks[targetDateKey]?.indexWhere((t) => t.title == taskToMove.title) ??
+            -1;
+
+    if (duplicateTaskIndex != -1) {
+      _tasks[currentDateKey]!.removeAt(taskIndex);
+      final success = await _saveTasks();
+      if (!success) {
+        _tasks[currentDateKey]!.insert(taskIndex, taskToMove);
+        notifyListeners();
+        return false;
+      }
+      notifyListeners();
+      return true;
+    }
+
+    final movedTask = taskToMove.copyWith(date: targetDate);
+
+    _tasks[currentDateKey]!.removeAt(taskIndex);
+
+    _tasks[targetDateKey]!.add(movedTask);
+
+    final success = await _saveTasks();
+    if (!success) {
+      _tasks[currentDateKey]!.insert(taskIndex, taskToMove);
+      _tasks[targetDateKey]!.remove(movedTask);
+      notifyListeners();
+      return false;
+    }
+
+    notifyListeners();
+    return true;
+  }
+
   Future<bool> updateTask(String taskId, String newTitle) async {
     final dateKey = _getDateKey(_selectedDate);
     final taskIndex = _tasks[dateKey]?.indexWhere((t) => t.id == taskId) ?? -1;
@@ -178,6 +227,39 @@ class TaskProvider with ChangeNotifier {
     if (tasks.isEmpty) return 0.0;
     final completed = tasks.where((task) => task.isCompleted).length;
     return completed / tasks.length;
+  }
+
+  Future<bool> reorderTasks(int oldIndex, int newIndex) async {
+    final dateKey = _getDateKey(_selectedDate);
+    if (!_tasks.containsKey(dateKey) || _tasks[dateKey]!.isEmpty) {
+      return false;
+    }
+
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+
+    if (oldIndex < 0 ||
+        oldIndex >= _tasks[dateKey]!.length ||
+        newIndex < 0 ||
+        newIndex >= _tasks[dateKey]!.length) {
+      return false;
+    }
+
+    final List<Task> previousTasks = List.from(_tasks[dateKey]!);
+
+    final task = _tasks[dateKey]!.removeAt(oldIndex);
+    _tasks[dateKey]!.insert(newIndex, task);
+
+    final success = await _saveTasks();
+    if (!success) {
+      _tasks[dateKey] = previousTasks;
+      notifyListeners();
+      return false;
+    }
+
+    notifyListeners();
+    return true;
   }
 
   void initializeDefaultTasks() {

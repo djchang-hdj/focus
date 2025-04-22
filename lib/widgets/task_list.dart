@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart'; // 날짜 형식을 위해 추가
+import 'dart:ui' show lerpDouble; // lerpDouble 함수 임포트
 import '../providers/task_provider.dart';
 import '../models/task.dart';
 import '../providers/timer_provider.dart';
@@ -21,11 +22,18 @@ class TaskList extends StatefulWidget {
 class _TaskListState extends State<TaskList> {
   final TextEditingController _textController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  bool _showLeftButton = false;
+  bool _showRightButton = false;
+  double _mouseY = 0;
+  final Map<String, FocusNode> _taskFocusNodes = {};
+  final Map<String, TextEditingController> _taskControllers = {};
 
   @override
   void dispose() {
     _textController.dispose();
     _focusNode.dispose();
+    _taskFocusNodes.forEach((_, node) => node.dispose());
+    _taskControllers.forEach((_, controller) => controller.dispose());
     super.dispose();
   }
 
@@ -35,42 +43,102 @@ class _TaskListState extends State<TaskList> {
       builder: (context, taskProvider, child) {
         final tasks = taskProvider.currentTasks;
 
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildDateSelector(context, taskProvider),
-            _buildProgressBar(taskProvider),
-            if (tasks.isEmpty)
-              _buildEmptyState(context, taskProvider)
-            else
-              Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: tasks.length,
-                  itemBuilder: (context, index) {
-                    return _buildTaskItem(context, tasks[index], taskProvider);
-                  },
-                ),
+        return MouseRegion(
+          onEnter: (_) => setState(() {
+            _showLeftButton = false;
+            _showRightButton = false;
+          }),
+          onExit: (_) => setState(() {
+            _showLeftButton = false;
+            _showRightButton = false;
+          }),
+          onHover: (event) {
+            final size = MediaQuery.of(context).size;
+            final cardWidth = size.width > 800 ? 800 : size.width;
+            final leftEdgeZone = cardWidth * 0.05;
+            final rightEdgeZone = cardWidth * 0.95;
+
+            setState(() {
+              _mouseY = event.localPosition.dy;
+              _showLeftButton = event.localPosition.dx < leftEdgeZone;
+              _showRightButton = event.localPosition.dx > rightEdgeZone;
+            });
+          },
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildDateSelector(context, taskProvider),
+                  _buildProgressBar(taskProvider),
+                  if (tasks.isEmpty)
+                    _buildEmptyState(context, taskProvider)
+                  else
+                    Flexible(
+                      child: ReorderableListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: tasks.length,
+                        onReorder: (oldIndex, newIndex) {
+                          taskProvider.reorderTasks(oldIndex, newIndex);
+                        },
+                        itemBuilder: (context, index) {
+                          return _buildTaskItem(
+                            context,
+                            tasks[index],
+                            taskProvider,
+                            key: ValueKey(tasks[index].id),
+                          );
+                        },
+                        proxyDecorator: (child, index, animation) {
+                          return AnimatedBuilder(
+                            animation: animation,
+                            builder: (BuildContext context, Widget? child) {
+                              final double animValue =
+                                  Curves.easeInOut.transform(animation.value);
+                              final double elevation =
+                                  lerpDouble(0, 6, animValue)!;
+                              return Material(
+                                elevation: elevation,
+                                color: Colors.transparent,
+                                shadowColor: Theme.of(context)
+                                    .colorScheme
+                                    .shadow
+                                    .withOpacity(0.3),
+                                child: child,
+                              );
+                            },
+                            child: child,
+                          );
+                        },
+                        buildDefaultDragHandles: false,
+                      ),
+                    ),
+                  _buildAddTaskField(context, taskProvider),
+                ],
               ),
-            _buildAddTaskField(context, taskProvider),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: TextButton.icon(
-                onPressed: () {
-                  _addDefaultTasks(taskProvider);
-                },
-                icon: const Icon(Icons.add_task),
-                label: const Text('기본 할일 추가하기'),
-                style: TextButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
+  }
+
+  double _getButtonYPosition() {
+    // 화면 상단과 하단을 고려하여 버튼 위치 제한
+    final minY = 50.0; // 최소 Y 위치 (상단 여백)
+    final maxY = 500.0; // 최대 Y 위치 (하단 여백)
+
+    // 버튼 높이의 절반을 빼서 마우스 커서 위치에 버튼 중앙이 오도록 함
+    final buttonHalfHeight = 20.0;
+    double y = _mouseY - buttonHalfHeight;
+
+    // 화면 범위를 벗어나지 않도록 조정
+    if (y < minY) y = minY;
+    if (y > maxY) y = maxY;
+
+    return y;
   }
 
   Widget _buildEmptyState(BuildContext context, TaskProvider taskProvider) {
@@ -345,188 +413,372 @@ class _TaskListState extends State<TaskList> {
   }
 
   Widget _buildTaskItem(
-      BuildContext context, Task task, TaskProvider taskProvider) {
+      BuildContext context, Task task, TaskProvider taskProvider,
+      {required Key key}) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Dismissible(
-      key: ValueKey(task.id),
-      background: Container(
-        decoration: BoxDecoration(
-          color: AppTheme.errorColor.withOpacity(0.8),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        margin: const EdgeInsets.symmetric(vertical: 4.0),
-        child: const Icon(Icons.delete_outline, color: Colors.white),
-      ),
-      direction: DismissDirection.endToStart,
-      onDismissed: (direction) {
-        taskProvider.deleteTask(task.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('할 일이 삭제되었습니다'),
-            behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(
-              label: '실행 취소',
-              textColor: colorScheme.primary,
-              onPressed: () {
-                // 삭제된 작업 복원 (실제로는 구현되어야 함)
-              },
+    if (!_taskFocusNodes.containsKey(task.id)) {
+      _taskFocusNodes[task.id] = FocusNode();
+    }
+    if (!_taskControllers.containsKey(task.id)) {
+      _taskControllers[task.id] = TextEditingController(text: task.title);
+    } else {
+      _taskControllers[task.id]!.text = task.title;
+    }
+
+    final focusNode = _taskFocusNodes[task.id]!;
+    final controller = _taskControllers[task.id]!;
+
+    return MouseRegion(
+      key: key,
+      onEnter: (_) => setState(() {
+        task.isHovered = true;
+      }),
+      onExit: (_) => setState(() {
+        task.isHovered = false;
+      }),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Dismissible(
+            key: ValueKey(task.id),
+            background: Container(
+              decoration: BoxDecoration(
+                color: AppTheme.errorColor.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              margin: const EdgeInsets.symmetric(vertical: 4.0),
+              child: const Icon(Icons.delete_outline, color: Colors.white),
             ),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
-        decoration: BoxDecoration(
-          color: task.isCompleted
-              ? colorScheme.surfaceContainerLow.withOpacity(0.5)
-              : colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(
-              task.isCompleted ? 0.1 : 0.3,
-            ),
-            width: 1,
-          ),
-          boxShadow: task.isCompleted
-              ? null
-              : [
-                  BoxShadow(
-                    color: colorScheme.shadow.withOpacity(0.04),
-                    blurRadius: 3,
-                    offset: const Offset(0, 1),
+            direction: DismissDirection.endToStart,
+            onDismissed: (direction) {
+              taskProvider.deleteTask(task.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('할 일이 삭제되었습니다'),
+                  behavior: SnackBarBehavior.floating,
+                  action: SnackBarAction(
+                    label: '실행 취소',
+                    textColor: colorScheme.primary,
+                    onPressed: () {
+                      // 삭제된 작업 복원 (실제로는 구현되어야 함)
+                    },
                   ),
-                ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                context.read<TaskProvider>().toggleTask(task.id);
-              },
-              onLongPress: () {
-                setState(() {
-                  task.isEditing = true;
-                });
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 12.0,
+                  duration: const Duration(seconds: 3),
                 ),
-                child: Row(
-                  children: [
-                    // 체크박스 부분
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.fastOutSlowIn,
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: task.isCompleted
-                            ? colorScheme.primary
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: task.isCompleted
-                              ? colorScheme.primary
-                              : colorScheme.outline,
-                          width: 2,
+              );
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin:
+                  const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
+              decoration: BoxDecoration(
+                color: task.isCompleted
+                    ? colorScheme.surfaceContainerLow.withOpacity(0.5)
+                    : colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: colorScheme.outlineVariant.withOpacity(
+                    task.isCompleted ? 0.1 : 0.3,
+                  ),
+                  width: 1,
+                ),
+                boxShadow: task.isCompleted
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: colorScheme.shadow.withOpacity(0.04),
+                          blurRadius: 3,
+                          offset: const Offset(0, 1),
                         ),
+                      ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        // 카드 싱글클릭 시 더 이상 체크 토글이 아님
+                      });
+                    },
+                    onDoubleTap: () {
+                      setState(() {
+                        task.isEditing = true;
+                        // 더블 클릭 시 다음 프레임에서 포커스 요청
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          _taskFocusNodes[task.id]?.requestFocus();
+                        });
+                      });
+                    },
+                    onLongPress: () {
+                      setState(() {
+                        task.isEditing = true;
+                        // 길게 누를 때도 다음 프레임에서 포커스 요청
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          _taskFocusNodes[task.id]?.requestFocus();
+                        });
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 12.0,
                       ),
-                      child: task.isCompleted
-                          ? Center(
-                              child: Icon(
-                                Icons.check,
-                                size: 16,
-                                color: colorScheme.onPrimary,
+                      child: Row(
+                        children: [
+                          // 체크박스 부분
+                          InkWell(
+                            onTap: () {
+                              context.read<TaskProvider>().toggleTask(task.id);
+                            },
+                            borderRadius: BorderRadius.circular(6),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.fastOutSlowIn,
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: task.isCompleted
+                                    ? colorScheme.primary
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: task.isCompleted
+                                      ? colorScheme.primary
+                                      : colorScheme.outline,
+                                  width: 2,
+                                ),
                               ),
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 16),
-                    // 제목 부분
-                    Expanded(
-                      child: task.isEditing
-                          ? TextField(
-                              controller:
-                                  TextEditingController(text: task.title),
-                              autofocus: true,
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                              onSubmitted: (newValue) async {
-                                if (newValue.isNotEmpty) {
-                                  await taskProvider.updateTask(
-                                      task.id, newValue);
-                                  setState(() {
-                                    task.isEditing = false;
-                                  });
-                                }
-                              },
-                              onEditingComplete: () {
-                                setState(() {
-                                  task.isEditing = false;
-                                });
-                              },
-                            )
-                          : Text(
-                              task.title,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyLarge
-                                  ?.copyWith(
-                                    decoration: task.isCompleted
-                                        ? TextDecoration.lineThrough
-                                        : null,
-                                    color: task.isCompleted
-                                        ? colorScheme.onSurfaceVariant
-                                            .withOpacity(0.7)
-                                        : colorScheme.onSurface,
-                                    fontWeight: task.isCompleted
-                                        ? FontWeight.normal
-                                        : FontWeight.w500,
-                                  ),
+                              child: task.isCompleted
+                                  ? Center(
+                                      child: Icon(
+                                        Icons.check,
+                                        size: 16,
+                                        color: colorScheme.onPrimary,
+                                      ),
+                                    )
+                                  : null,
                             ),
-                    ),
-                    if (!task.isCompleted)
-                      IconButton(
-                        icon: Icon(
-                          Icons.timer_outlined,
-                          color: colorScheme.primary,
-                          size: 20,
-                        ),
-                        visualDensity: VisualDensity.compact,
-                        onPressed: () {
-                          startTimer(task.title);
-                        },
-                        tooltip: '타이머 시작하기',
+                          ),
+                          const SizedBox(width: 16),
+                          // 제목 부분
+                          Expanded(
+                            child: task.isEditing
+                                ? TextField(
+                                    controller: controller,
+                                    autofocus: true,
+                                    focusNode: focusNode,
+                                    decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.zero,
+                                    ),
+                                    onSubmitted: (newValue) async {
+                                      if (newValue.isNotEmpty) {
+                                        await taskProvider.updateTask(
+                                            task.id, newValue);
+                                        setState(() {
+                                          task.isEditing = false;
+                                        });
+                                      }
+                                    },
+                                    onEditingComplete: () {
+                                      setState(() {
+                                        task.isEditing = false;
+                                      });
+                                    },
+                                    onTapOutside: (event) async {
+                                      if (controller.text.isNotEmpty) {
+                                        await taskProvider.updateTask(
+                                            task.id, controller.text);
+                                      }
+                                      setState(() {
+                                        task.isEditing = false;
+                                      });
+                                    },
+                                  )
+                                : Text(
+                                    task.title,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyLarge
+                                        ?.copyWith(
+                                          decoration: task.isCompleted
+                                              ? TextDecoration.lineThrough
+                                              : null,
+                                          color: task.isCompleted
+                                              ? colorScheme.onSurfaceVariant
+                                                  .withOpacity(0.7)
+                                              : colorScheme.onSurface,
+                                          fontWeight: task.isCompleted
+                                              ? FontWeight.normal
+                                              : FontWeight.w500,
+                                        ),
+                                  ),
+                          ),
+                          if (!task.isCompleted)
+                            IconButton(
+                              icon: Icon(
+                                Icons.timer_outlined,
+                                color: colorScheme.primary,
+                                size: 20,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              onPressed: () {
+                                startTimer(task.title);
+                              },
+                              tooltip: '타이머 시작하기',
+                            ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.delete_outline,
+                              color:
+                                  colorScheme.onSurfaceVariant.withOpacity(0.7),
+                              size: 20,
+                            ),
+                            visualDensity: VisualDensity.compact,
+                            onPressed: () {
+                              context.read<TaskProvider>().removeTask(task.id);
+                            },
+                            tooltip: '삭제하기',
+                          ),
+                          // 드래그 핸들 - 휴지통 아이콘 오른쪽에 배치
+                          ReorderableDragStartListener(
+                            index: taskProvider.currentTasks.indexOf(task),
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.grab,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Icon(
+                                  Icons.drag_handle,
+                                  color: colorScheme.outline.withOpacity(0.7),
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.delete_outline,
-                        color: colorScheme.onSurfaceVariant.withOpacity(0.7),
-                        size: 20,
-                      ),
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () {
-                        context.read<TaskProvider>().removeTask(task.id);
-                      },
-                      tooltip: '삭제하기',
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+          // 왼쪽 화살표 (카드 바깥쪽)
+          if (task.isHovered)
+            Positioned(
+              left: -15, // 카드 왼쪽 바깥으로 위치
+              top: 0,
+              bottom: 0,
+              child: MouseRegion(
+                onEnter: (_) => setState(() {
+                  task.isHovered = true; // 마우스가 버튼 위에 있어도 호버 유지
+                }),
+                child: Center(
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHigh.withOpacity(0.9),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 3,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: () async {
+                          final previousDay = taskProvider.selectedDate
+                              .subtract(const Duration(days: 1));
+                          final result = await taskProvider.moveTaskToDate(
+                              task.id, previousDay);
+                          if (result && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('할 일이 전날로 이동되었습니다'),
+                                behavior: SnackBarBehavior.floating,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                        child: Icon(
+                          Icons.arrow_back_rounded,
+                          color: colorScheme.primary,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          // 오른쪽 화살표 (카드 바깥쪽)
+          if (task.isHovered)
+            Positioned(
+              right: -15, // 카드 오른쪽 바깥으로 위치
+              top: 0,
+              bottom: 0,
+              child: MouseRegion(
+                onEnter: (_) => setState(() {
+                  task.isHovered = true; // 마우스가 버튼 위에 있어도 호버 유지
+                }),
+                child: Center(
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHigh.withOpacity(0.9),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 3,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: () async {
+                          final nextDay = taskProvider.selectedDate
+                              .add(const Duration(days: 1));
+                          final result = await taskProvider.moveTaskToDate(
+                              task.id, nextDay);
+                          if (result && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('할 일이 다음날로 이동되었습니다'),
+                                behavior: SnackBarBehavior.floating,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                        child: Icon(
+                          Icons.arrow_forward_rounded,
+                          color: colorScheme.primary,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

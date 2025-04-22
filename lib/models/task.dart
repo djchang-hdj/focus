@@ -4,6 +4,7 @@ class Task {
   bool isCompleted;
   final DateTime date;
   bool isEditing;
+  bool isHovered;
 
   Task({
     required this.id,
@@ -11,6 +12,7 @@ class Task {
     this.isCompleted = false,
     required this.date,
     this.isEditing = false,
+    this.isHovered = false,
   });
 
   Task copyWith({
@@ -19,6 +21,7 @@ class Task {
     bool? isCompleted,
     DateTime? date,
     bool? isEditing,
+    bool? isHovered,
   }) {
     return Task(
       id: id ?? this.id,
@@ -26,6 +29,7 @@ class Task {
       isCompleted: isCompleted ?? this.isCompleted,
       date: date ?? this.date,
       isEditing: isEditing ?? this.isEditing,
+      isHovered: isHovered ?? this.isHovered,
     );
   }
 
@@ -46,6 +50,7 @@ class Task {
       isCompleted: json['isCompleted'] ?? false,
       date: DateTime.parse(json['date']),
       isEditing: json['isEditing'] ?? false,
+      isHovered: false,
     );
   }
 }

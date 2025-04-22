@@ -615,10 +615,10 @@ class _FocusTimerState extends State<FocusTimer> {
                                         timerProvider.clearAllRecords();
                                         Navigator.pop(context);
                                       },
-                                      child: const Text('삭제'),
                                       style: TextButton.styleFrom(
                                         foregroundColor: colorScheme.error,
                                       ),
+                                      child: const Text('삭제'),
                                     ),
                                   ],
                                 ),
@@ -868,10 +868,10 @@ class _FocusTimerState extends State<FocusTimer> {
                                 timerProvider.clearRecordsForDate(dateKey);
                                 Navigator.pop(context);
                               },
-                              child: const Text('삭제'),
                               style: TextButton.styleFrom(
                                 foregroundColor: colorScheme.error,
                               ),
+                              child: const Text('삭제'),
                             ),
                           ],
                         ),
@@ -998,7 +998,7 @@ class _FocusTimerState extends State<FocusTimer> {
                                   _buildRecordInfoItem(
                                     context,
                                     Icons.timelapse_outlined,
-                                    '${progressMinutes}분/${duration}분',
+                                    '$progressMinutes분/$duration분',
                                   ),
                                   const SizedBox(width: 16),
                                   _buildRecordInfoItem(
