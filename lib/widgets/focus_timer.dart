@@ -1,7 +1,204 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:math' as math;
 import '../providers/timer_provider.dart';
 import '../theme/app_theme.dart';
+
+// 무지개 타이머 페인터
+class RainbowTimerPainter extends CustomPainter {
+  final double progress;
+  final Color primaryColor;
+  final Color backgroundColor;
+
+  RainbowTimerPainter({
+    required this.progress,
+    required this.primaryColor,
+    required this.backgroundColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2 - 6;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    // 배경 호 그리기 (세시부터 아홉시까지)
+    final backgroundPaint = Paint()
+      ..color = backgroundColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 12
+      ..strokeCap = StrokeCap.round;
+
+    // 호는 각도가 라디안 단위이며, 0은 우측(3시 방향)에서 시작
+    // 3시는 0라디안, 9시는 -pi
+    canvas.drawArc(
+      rect,
+      0, // 시작 각도 (3시 방향)
+      -math.pi, // 스윕 각도 (시계 반대 방향으로 180도 = 9시 방향까지)
+      false,
+      backgroundPaint,
+    );
+
+    // 무지개 색상 정의 - 역순으로 변경 (보라색부터 시작)
+    final List<Color> rainbowColors = [
+      const Color(0xFFAA00FF), // 밝은 보라
+      const Color(0xFF3D5AFE), // 밝은 남색
+      const Color(0xFF00B0FF), // 밝은 파랑
+      const Color(0xFF00E676), // 밝은 초록
+      const Color(0xFFFFEA00), // 밝은 노랑
+      const Color(0xFFFF9100), // 밝은 주황
+      const Color(0xFFFF1744), // 밝은 빨강
+    ];
+
+    // 전체 호의 각도는 -pi (180도)
+    final totalAngle = math.pi;
+
+    // 진행도에 맞는 총 각도 계산 (1.0~0.0 -> 0~-pi)
+    final completedAngle = -totalAngle * progress;
+
+    // 현재 진행에 맞는 색상 인덱스 계산
+    final progressPct = 1 - progress; // 1.0에서 0.0으로 감소하는 값을 반전
+    final colorIndex = math.min(
+        (progressPct * rainbowColors.length).floor(), rainbowColors.length - 1);
+
+    // 단색 페인트 생성 - 현재 진행율에 해당하는 무지개 색상 사용
+    final arcPaint = Paint()
+      ..color = rainbowColors[colorIndex]
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 12
+      ..strokeCap = StrokeCap.round;
+
+    // 타이머 진행상황 그리기 (오른쪽에서 왼쪽으로)
+    if (progress > 0) {
+      canvas.drawArc(
+        rect,
+        0, // 항상 3시 방향에서 시작
+        completedAngle, // 시계 반대방향으로 진행도만큼 그림
+        false,
+        arcPaint,
+      );
+    }
+
+    // 끝 캡을 위한 작은 점을 그림 (진행된 위치에)
+    if (progress > 0) {
+      // 현재 진행 위치 계산
+      final endAngle = completedAngle;
+      final endPointX = center.dx + radius * math.cos(endAngle);
+      final endPointY = center.dy + radius * math.sin(endAngle);
+
+      // 캡 바깥 원
+      final endCapOuterPaint = Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.fill;
+
+      canvas.drawCircle(Offset(endPointX, endPointY), 7, endCapOuterPaint);
+
+      // 캡 내부 원 - 현재 메인 호와 동일한 색상 사용
+      final endCapInnerPaint = Paint()
+        ..color = rainbowColors[colorIndex]
+        ..style = PaintingStyle.fill;
+
+      canvas.drawCircle(Offset(endPointX, endPointY), 4, endCapInnerPaint);
+    }
+
+    // 무지개 그라데이션 바 추가 (타이머 아래에 위치)
+    final barHeight = 18.0;
+    final barY = center.dy + radius * 0.6;
+
+    // 그라데이션 바의 범위
+    final barRect =
+        Rect.fromLTWH(center.dx - radius * 0.8, barY, radius * 1.6, barHeight);
+
+    // 무지개 그라데이션 생성 - 막대는 원래대로 빨주노초파남보 순서
+    final List<Color> barColors = [
+      const Color(0xFFFF1744), // 밝은 빨강
+      const Color(0xFFFF9100), // 밝은 주황
+      const Color(0xFFFFEA00), // 밝은 노랑
+      const Color(0xFF00E676), // 밝은 초록
+      const Color(0xFF00B0FF), // 밝은 파랑
+      const Color(0xFF3D5AFE), // 밝은 남색
+      const Color(0xFFAA00FF), // 밝은 보라
+    ];
+
+    final rainbowGradientBar = LinearGradient(
+      colors: barColors,
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+    );
+
+    // 배경 그리기 (회색 바)
+    final backgroundBarPaint = Paint()
+      ..color = backgroundColor
+      ..style = PaintingStyle.fill;
+
+    final backgroundRRect =
+        RRect.fromRectAndRadius(barRect, const Radius.circular(9));
+    canvas.drawRRect(backgroundRRect, backgroundBarPaint);
+
+    // 무지개 그라데이션 막대 (원래대로 복원)
+    if (progress > 0) {
+      // 진행된 만큼 바를 그림
+      final progressWidth = barRect.width * progress;
+      final progressRect =
+          Rect.fromLTWH(barRect.left, barRect.top, progressWidth, barHeight);
+
+      // 무지개 그라데이션 페인트
+      final rainbowBarPaint = Paint()
+        ..shader = rainbowGradientBar.createShader(barRect)
+        ..style = PaintingStyle.fill;
+
+      // 양쪽 모서리 둥글게
+      final progressRRect = RRect.fromRectAndCorners(
+        progressRect,
+        topLeft: const Radius.circular(9),
+        bottomLeft: const Radius.circular(9),
+        topRight: progressWidth >= barRect.width * 0.95
+            ? const Radius.circular(9)
+            : Radius.zero,
+        bottomRight: progressWidth >= barRect.width * 0.95
+            ? const Radius.circular(9)
+            : Radius.zero,
+      );
+
+      canvas.drawRRect(progressRRect, rainbowBarPaint);
+    }
+
+    // 남은 시간 퍼센트 텍스트 표시
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: '${(progress * 100).toStringAsFixed(0)}%',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          shadows: [
+            Shadow(
+              offset: Offset(1, 1),
+              blurRadius: 3.0,
+              color: Color.fromARGB(255, 0, 0, 0),
+            ),
+          ],
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(
+        barRect.center.dx - textPainter.width / 2,
+        barRect.center.dy - textPainter.height / 2,
+      ),
+    );
+  }
+
+  @override
+  bool shouldRepaint(RainbowTimerPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.primaryColor != primaryColor ||
+        oldDelegate.backgroundColor != backgroundColor;
+  }
+}
 
 class FocusTimer extends StatefulWidget {
   const FocusTimer({super.key});
@@ -193,34 +390,15 @@ class _FocusTimerState extends State<FocusTimer> {
                                           ? colorScheme.error
                                           : colorScheme.primary;
 
-                                  return Stack(
-                                    children: [
-                                      // 배경 원
-                                      SizedBox.expand(
-                                        child: CircularProgressIndicator(
-                                          value: 1.0,
-                                          strokeWidth: 12,
-                                          backgroundColor: colorScheme
-                                              .surfaceContainerHighest
-                                              .withOpacity(0.3),
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                            colorScheme.surfaceContainerHighest,
-                                          ),
-                                        ),
-                                      ),
-                                      // 진행도 원
-                                      SizedBox.expand(
-                                        child: CircularProgressIndicator(
-                                          value: value,
-                                          strokeWidth: 12,
-                                          backgroundColor: Colors.transparent,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                  timerColor),
-                                        ),
-                                      ),
-                                    ],
+                                  return CustomPaint(
+                                    size: Size.infinite,
+                                    painter: RainbowTimerPainter(
+                                      progress: value,
+                                      primaryColor: timerColor,
+                                      backgroundColor: colorScheme
+                                          .surfaceContainerHighest
+                                          .withOpacity(0.3),
+                                    ),
                                   );
                                 },
                               ),
@@ -381,7 +559,7 @@ class _FocusTimerState extends State<FocusTimer> {
             const SizedBox(height: 16),
 
             // 타이머 기록 리스트
-            if (timerProvider.records.isNotEmpty)
+            if (timerProvider.recordsByDate.isNotEmpty)
               Card(
                 margin:
                     const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -391,155 +569,87 @@ class _FocusTimerState extends State<FocusTimer> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: colorScheme.secondary.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.history_outlined,
-                              color: colorScheme.secondary,
-                              size: 20,
-                            ),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color:
+                                      colorScheme.secondary.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.history_outlined,
+                                  color: colorScheme.secondary,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                '타이머 기록',
+                                style: textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.onSurface,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          Text(
-                            '타이머 기록',
-                            style: textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSurface,
+                          TextButton.icon(
+                            onPressed: () {
+                              // 모든 기록 지우기 확인 다이얼로그
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('모든 기록 삭제'),
+                                  content: const Text(
+                                      '모든 타이머 기록을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('취소'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        timerProvider.clearAllRecords();
+                                        Navigator.pop(context);
+                                      },
+                                      child: const Text('삭제'),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: colorScheme.error,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                            icon: Icon(
+                              Icons.delete_outlined,
+                              size: 16,
+                              color: colorScheme.error,
+                            ),
+                            label: Text(
+                              '전체 삭제',
+                              style: TextStyle(
+                                color: colorScheme.error,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 16),
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: timerProvider.records.length,
-                        itemBuilder: (context, index) {
-                          final record = timerProvider.records[index];
-                          final startTime = _formatTimeAmPm(record.startTime);
-                          final duration = record.initialDuration ~/ 60;
-                          final progressMinutes =
-                              (record.initialDuration * record.progressRate)
-                                      .round() ~/
-                                  60;
 
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            decoration: BoxDecoration(
-                              color: colorScheme.surfaceContainerLow,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: record.isCompleted
-                                    ? colorScheme.primary.withOpacity(0.2)
-                                    : colorScheme.error.withOpacity(0.2),
-                                width: 1,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              record.title,
-                                              style: textTheme.titleMedium
-                                                  ?.copyWith(
-                                                fontWeight: FontWeight.w600,
-                                                color: colorScheme.onSurface,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 3,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: record.isCompleted
-                                                  ? AppTheme.successColor
-                                                      .withOpacity(0.2)
-                                                  : colorScheme.error
-                                                      .withOpacity(0.2),
-                                              borderRadius:
-                                                  BorderRadius.circular(30),
-                                            ),
-                                            child: Text(
-                                              record.isCompleted ? '완료' : '중단',
-                                              style: textTheme.labelSmall
-                                                  ?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                                color: record.isCompleted
-                                                    ? AppTheme.successColor
-                                                    : colorScheme.error,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        children: [
-                                          _buildRecordInfoItem(
-                                            context,
-                                            Icons.access_time_outlined,
-                                            startTime,
-                                          ),
-                                          const SizedBox(width: 16),
-                                          _buildRecordInfoItem(
-                                            context,
-                                            Icons.timelapse_outlined,
-                                            '${progressMinutes}분/${duration}분',
-                                          ),
-                                          const SizedBox(width: 16),
-                                          _buildRecordInfoItem(
-                                            context,
-                                            Icons.percent_outlined,
-                                            '${(record.progressRate * 100).round()}%',
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // 진행 상태 바
-                                ClipRRect(
-                                  borderRadius: const BorderRadius.only(
-                                    bottomLeft: Radius.circular(12),
-                                    bottomRight: Radius.circular(12),
-                                  ),
-                                  child: LinearProgressIndicator(
-                                    value: record.progressRate,
-                                    backgroundColor: colorScheme
-                                        .surfaceContainerHighest
-                                        .withOpacity(0.3),
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      record.isCompleted
-                                          ? AppTheme.successColor
-                                          : colorScheme.error,
-                                    ),
-                                    minHeight: 4,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
+                      // 날짜별 타이머 기록
+                      _buildDateGroupedRecords(context, timerProvider),
                     ],
                   ),
                 ),
@@ -678,5 +788,268 @@ class _FocusTimerState extends State<FocusTimer> {
     final hour = dt.hour > 12 ? dt.hour - 12 : dt.hour;
     final ampm = dt.hour >= 12 ? '오후' : '오전';
     return '$ampm ${hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  // 날짜별로 그룹화된 타이머 기록을 표시하는 위젯
+  Widget _buildDateGroupedRecords(
+    BuildContext context,
+    TimerProvider timerProvider,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    // 가장 최근 날짜가 먼저 오도록 정렬
+    final sortedDates = timerProvider.recordsByDate.keys.toList()
+      ..sort((a, b) => b.compareTo(a));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: sortedDates.map((dateKey) {
+        final records = timerProvider.getRecordsForDate(dateKey);
+
+        // 날짜 표시 형식: '2023년 5월 1일 (월)'
+        final date = DateTime.parse(dateKey);
+        final formattedDate = _formatDateWithDay(date);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 날짜 헤더
+            Container(
+              margin: const EdgeInsets.only(top: 8, bottom: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          formattedDate,
+                          style: textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${records.length}개의 기록',
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                  // 특정 날짜 기록 삭제 버튼
+                  IconButton(
+                    onPressed: () {
+                      // 해당 날짜의 기록 삭제 확인 다이얼로그
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: Text('$formattedDate 기록 삭제'),
+                          content: const Text(
+                              '이 날짜의 모든 타이머 기록을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('취소'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                timerProvider.clearRecordsForDate(dateKey);
+                                Navigator.pop(context);
+                              },
+                              child: const Text('삭제'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: colorScheme.error,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    icon: Icon(
+                      Icons.delete_outline,
+                      size: 16,
+                      color: colorScheme.error.withOpacity(0.7),
+                    ),
+                    style: IconButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    tooltip: '이 날짜의 기록 삭제',
+                  ),
+                ],
+              ),
+            ),
+
+            // 해당 날짜의 타이머 기록들
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: records.length,
+              itemBuilder: (context, index) {
+                final record = records[index];
+                final startTime = _formatTimeAmPm(record.startTime);
+                final duration = record.initialDuration ~/ 60;
+                final progressMinutes =
+                    (record.initialDuration * record.progressRate).round() ~/
+                        60;
+
+                return Dismissible(
+                  key: Key(
+                      '${dateKey}_${index}_${record.startTime.millisecondsSinceEpoch}'),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 16.0),
+                    color: colorScheme.error,
+                    child: const Icon(
+                      Icons.delete,
+                      color: Colors.white,
+                    ),
+                  ),
+                  onDismissed: (direction) {
+                    timerProvider.deleteRecord(dateKey, index);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${record.title} 기록이 삭제되었습니다.'),
+                        duration: const Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: record.isCompleted
+                            ? colorScheme.primary.withOpacity(0.2)
+                            : colorScheme.error.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      record.title,
+                                      style: textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: colorScheme.onSurface,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: record.isCompleted
+                                          ? AppTheme.successColor
+                                              .withOpacity(0.2)
+                                          : colorScheme.error.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                    child: Text(
+                                      record.isCompleted ? '완료' : '중단',
+                                      style: textTheme.labelSmall?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: record.isCompleted
+                                            ? AppTheme.successColor
+                                            : colorScheme.error,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  _buildRecordInfoItem(
+                                    context,
+                                    Icons.access_time_outlined,
+                                    startTime,
+                                  ),
+                                  const SizedBox(width: 16),
+                                  _buildRecordInfoItem(
+                                    context,
+                                    Icons.timelapse_outlined,
+                                    '${progressMinutes}분/${duration}분',
+                                  ),
+                                  const SizedBox(width: 16),
+                                  _buildRecordInfoItem(
+                                    context,
+                                    Icons.percent_outlined,
+                                    '${(record.progressRate * 100).round()}%',
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        // 진행 상태 바
+                        ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(12),
+                            bottomRight: Radius.circular(12),
+                          ),
+                          child: LinearProgressIndicator(
+                            value: record.progressRate,
+                            backgroundColor: colorScheme.surfaceContainerHighest
+                                .withOpacity(0.3),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              record.isCompleted
+                                  ? AppTheme.successColor
+                                  : colorScheme.error,
+                            ),
+                            minHeight: 4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            // 날짜 그룹 사이의 구분선
+            if (sortedDates.indexOf(dateKey) < sortedDates.length - 1)
+              const Divider(height: 32),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  // 날짜 형식 포맷팅: '2023년 5월 1일 (월)'
+  String _formatDateWithDay(DateTime date) {
+    const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
+    final dayOfWeek = dayNames[date.weekday - 1]; // weekday는 1(월)~7(일)
+
+    return '${date.year}년 ${date.month}월 ${date.day}일 ($dayOfWeek)';
   }
 }
