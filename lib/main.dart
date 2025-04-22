@@ -250,11 +250,20 @@ class AppHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isPlatformDark = theme.brightness == Brightness.dark;
 
     return Card(
       elevation: 0,
-      color: theme.colorScheme.surface,
+      color: colorScheme.surface,
+      margin: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -265,23 +274,56 @@ class AppHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // 로고 및 타이틀
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.auto_awesome,
+                    color: colorScheme.primary,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     '생각하고 말하자',
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
+                      color: colorScheme.onSurface,
+                      letterSpacing: -0.5,
                     ),
                   ),
                 ),
                 // 데이터 삭제 버튼
-                IconButton(
-                  onPressed: () => _showClearDataDialog(context),
-                  icon: Icon(
-                    Icons.delete_forever_rounded,
-                    color: theme.colorScheme.error,
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _showClearDataDialog(context),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.delete_forever_rounded,
+                            color: colorScheme.error,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '초기화',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: colorScheme.error,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  tooltip: '모든 데이터 삭제',
                 ),
                 const SizedBox(width: 8),
                 // 테마 토글 버튼
@@ -315,19 +357,21 @@ class AppHeader extends StatelessWidget {
     bool isDark,
     ThemeProvider themeProvider,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: themeProvider.toggleTheme,
-        borderRadius: BorderRadius.circular(50),
+        borderRadius: BorderRadius.circular(8),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant,
+              color: colorScheme.outlineVariant,
               width: 1,
             ),
-            borderRadius: BorderRadius.circular(50),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
@@ -343,7 +387,8 @@ class AppHeader extends StatelessWidget {
             child: Icon(
               isDark ? Icons.dark_mode : Icons.light_mode,
               key: ValueKey<bool>(isDark),
-              color: Theme.of(context).colorScheme.primary,
+              color: colorScheme.primary,
+              size: 20,
             ),
           ),
         ),
@@ -352,6 +397,9 @@ class AppHeader extends StatelessWidget {
   }
 
   Widget _buildMotivationalQuote(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return StreamBuilder<int>(
       stream: Stream.periodic(const Duration(seconds: 10), (i) => i % 4),
       builder: (context, snapshot) {
@@ -375,7 +423,6 @@ class AppHeader extends StatelessWidget {
         ];
 
         final currentQuote = quotes[snapshot.data ?? 0];
-        final colorScheme = Theme.of(context).colorScheme;
 
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
@@ -388,7 +435,7 @@ class AppHeader extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: colorScheme.primary.withAlpha(51),
               width: 1,
@@ -399,8 +446,12 @@ class AppHeader extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withAlpha(25),
-                  borderRadius: BorderRadius.circular(12),
+                  color: colorScheme.primary.withAlpha(38),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: colorScheme.primary.withAlpha(77),
+                    width: 1,
+                  ),
                 ),
                 child: Icon(
                   currentQuote.icon,
@@ -412,12 +463,12 @@ class AppHeader extends StatelessWidget {
               Expanded(
                 child: Text(
                   currentQuote.text,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: colorScheme.onSurface,
-                        height: 1.3,
-                        letterSpacing: 0.3,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  style: textTheme.titleMedium?.copyWith(
+                    color: colorScheme.onSurface,
+                    height: 1.3,
+                    letterSpacing: -0.3,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -428,6 +479,8 @@ class AppHeader extends StatelessWidget {
   }
 
   Widget _buildTodayStats(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Consumer<TaskProvider>(
       builder: (context, taskProvider, _) {
         final completionRate =
@@ -463,39 +516,54 @@ class AppHeader extends StatelessWidget {
     String value,
     IconData icon,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
+          color: colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withOpacity(0.1),
+            width: 1,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(
-                  icon,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 14,
+                    color: colorScheme.primary,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   label,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                  style: textTheme.labelMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
               value,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+              style: textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+                letterSpacing: -0.5,
+              ),
             ),
           ],
         ),
@@ -504,12 +572,14 @@ class AppHeader extends StatelessWidget {
   }
 
   void _showClearDataDialog(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         icon: Icon(
           Icons.warning_rounded,
-          color: Theme.of(dialogContext).colorScheme.error,
+          color: colorScheme.error,
           size: 32,
         ),
         title: const Text('모든 데이터 삭제'),
@@ -542,8 +612,8 @@ class AppHeader extends StatelessWidget {
               );
             },
             style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(dialogContext).colorScheme.error,
-              foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+              backgroundColor: colorScheme.error,
+              foregroundColor: colorScheme.onError,
             ),
             child: const Text('삭제'),
           ),
