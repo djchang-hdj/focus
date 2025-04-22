@@ -23,7 +23,12 @@ class TaskProvider with ChangeNotifier {
   bool get isInitialized => _isInitialized;
 
   DateTime get selectedDate => _selectedDate;
-  List<Task> get currentTasks => _tasks[_getDateKey(_selectedDate)] ?? [];
+  List<Task> get currentTasks {
+    final tasks = _tasks[_getDateKey(_selectedDate)] ?? [];
+    return tasks
+      ..sort((a, b) =>
+          a.isCompleted == b.isCompleted ? 0 : (a.isCompleted ? -1 : 1));
+  }
 
   void selectDate(DateTime date) {
     _selectedDate = date;
