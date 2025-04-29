@@ -19,10 +19,17 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
   
+  # Assets section for icons and images
+  assets:
+    - assets/
+    - assets/icons/
+    - assets/fonts/
+    
   fonts:
     - family: NotoSans
       fonts:
@@ -31,3 +38,17 @@ flutter:
           weight: 700
         - asset: assets/fonts/NotoSans-SemiBold.ttf
           weight: 600
+
+# Flutter launcher icons configuration
+flutter_launcher_icons:
+  android: false
+  ios: false
+  web:
+    generate: false
+  macos:
+    generate: true
+    image_path: "assets/icons/app_icon.png"
+  windows:
+    generate: true
+    image_path: "assets/icons/app_icon.png"
+    icon_size: 256 # Windows icon size
