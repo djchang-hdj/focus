@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   // 기본 색상 정의 - 더 세련된 색상으로 업데이트
-  static const Color primaryColorLight = Color(0xFF6366F1); // Indigo
-  static const Color primaryColorDark = Color(0xFF818CF8); // Light Indigo
-  static const Color accentColorLight = Color(0xFFFF9500); // 더 선명한 Amber
-  static const Color accentColorDark = Color(0xFFFFB340); // 더 선명한 Light Amber
+  static const Color primaryColorLight = Color(0xFF4F46E5); // Indigo 600
+  static const Color primaryColorDark = Color(0xFF818CF8); // Indigo 400
+  static const Color accentColorLight = Color(0xFFF59E0B); // Amber 500
+  static const Color accentColorDark = Color(0xFFFBBF24); // Amber 400
 
   // 추가 색상 정의
-  static const Color successColor = Color(0xFF34C759);
-  static const Color warningColor = Color(0xFFFF9500);
-  static const Color errorColor = Color(0xFFFF3B30);
-  static const Color infoColor = Color(0xFF5AC8FA);
+  static const Color successColor = Color(0xFF22C55E); // Green 500
+  static const Color warningColor = Color(0xFFF59E0B); // Amber 500
+  static const Color errorColor = Color(0xFFEF4444); // Red 500
+  static const Color infoColor = Color(0xFF3B82F6); // Blue 500
 
   // 공통 테마 데이터
   static ThemeData _baseTheme(ColorScheme colorScheme) {
@@ -81,7 +81,7 @@ class AppTheme {
       cardTheme: CardTheme(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           side: BorderSide(
             color: colorScheme.outlineVariant.withOpacity(0.1),
             width: 1,
@@ -246,14 +246,14 @@ class AppTheme {
     const colorScheme = ColorScheme.light(
       primary: primaryColorLight,
       secondary: accentColorLight,
-      surface: Color(0xFFF8FAFC),
-      surfaceContainerLowest: Color(0xFFFFFFFF),
+      surface: Color(0xFFFFFFFF),
+      surfaceContainerLowest: Color(0xFFF3F4F6),
       surfaceContainerLow: Color(0xFFF9FAFB),
       surfaceContainer: Color(0xFFF3F4F6),
       surfaceContainerHigh: Color(0xFFE5E7EB),
       surfaceContainerHighest: Color(0xFFD1D5DB),
-      onSurface: Color(0xFF1F2937),
-      onSurfaceVariant: Color(0xFF4B5563),
+      onSurface: Color(0xFF111827),
+      onSurfaceVariant: Color(0xFF6B7280),
       outline: Color(0xFF9CA3AF),
       outlineVariant: Color(0xFFE5E7EB),
       error: errorColor,
@@ -267,17 +267,17 @@ class AppTheme {
     const colorScheme = ColorScheme.dark(
       primary: primaryColorDark,
       secondary: accentColorDark,
-      surface: Color(0xFF1E293B),
-      surfaceContainerLowest: Color(0xFF0F172A),
-      surfaceContainerLow: Color(0xFF1E293B),
-      surfaceContainer: Color(0xFF334155),
-      surfaceContainerHigh: Color(0xFF475569),
-      surfaceContainerHighest: Color(0xFF64748B),
-      onSurface: Color(0xFFF1F5F9),
-      onSurfaceVariant: Color(0xFFCBD5E1),
-      outline: Color(0xFF94A3B8),
-      outlineVariant: Color(0xFF334155),
-      error: Color(0xFFFCA5A5),
+      surface: Color(0xFF111827),
+      surfaceContainerLowest: Color(0xFF1F2937),
+      surfaceContainerLow: Color(0xFF111827),
+      surfaceContainer: Color(0xFF374151),
+      surfaceContainerHigh: Color(0xFF4B5569),
+      surfaceContainerHighest: Color(0xFF6B7280),
+      onSurface: Color(0xFFF9FAFB),
+      onSurfaceVariant: Color(0xFF9CA3AF),
+      outline: Color(0xFF6B7280),
+      outlineVariant: Color(0xFF374151),
+      error: Color(0xFFF87171),
       onError: Color(0xFF7F1D1D),
     );
 

@@ -1,7 +1,9 @@
+import 'package:focus/services/notification_service.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:focus/providers/settings_provider.dart';
 
 enum TimerStatus { initial, running, paused, finished }
 
@@ -54,7 +56,6 @@ class TimerRecord {
 }
 
 class TimerProvider with ChangeNotifier {
-  static const String _settingsKey = 'timer_settings';
   static const String _recordsKey = 'timer_records';
   Timer? _timer;
   int _duration = 1800; // 기본 30분
@@ -64,11 +65,13 @@ class TimerProvider with ChangeNotifier {
   String _title = '무제';
   DateTime? _startTime;
   int _initialDuration = 1800; // 처음 설정된 시간
+  final NotificationService notificationService;
+  final SettingsProvider settingsProvider;
 
   // 날짜별 기록 저장을 위한 맵
   final Map<String, List<TimerRecord>> _recordsByDate = {};
 
-  TimerProvider() {
+  TimerProvider({required this.notificationService, required this.settingsProvider}) {
     _loadSettings();
     _loadRecords();
   }
@@ -119,29 +122,17 @@ class TimerProvider with ChangeNotifier {
   bool get isRunning => _status == TimerStatus.running;
 
   Future<void> _loadSettings() async {
-    int retryCount = 0;
-    const maxRetries = 3;
+    _duration = settingsProvider.timerDuration * 60;
+    _remainingTime = _duration;
+    settingsProvider.addListener(_updateTimerDuration);
+    notifyListeners();
+  }
 
-    while (retryCount < maxRetries) {
-      try {
-        _prefs = await SharedPreferences.getInstance();
-        _duration = _prefs.getInt(_settingsKey) ?? 1800;
-        _remainingTime = _duration;
-        notifyListeners();
-        return;
-      } catch (e) {
-        retryCount++;
-        debugPrint('SharedPreferences retry $retryCount/$maxRetries: $e');
-        if (retryCount < maxRetries) {
-          await Future.delayed(Duration(milliseconds: 500 * retryCount));
-        }
-      }
+  void _updateTimerDuration() {
+    _duration = settingsProvider.timerDuration * 60;
+    if (status == TimerStatus.initial || status == TimerStatus.finished) {
+      _remainingTime = _duration;
     }
-
-    // 모든 재시도 실패 후 기본값 사용
-    debugPrint('Using default values after all retries failed');
-    _duration = 1800;
-    _remainingTime = 1800;
     notifyListeners();
   }
 
@@ -186,25 +177,6 @@ class TimerProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> setDuration(int minutes) async {
-    final oldDuration = _duration;
-    try {
-      _duration = minutes * 60;
-      _remainingTime = _duration;
-
-      await _prefs.setInt(_settingsKey, _duration);
-      notifyListeners();
-      return true;
-    } catch (e) {
-      debugPrint('Error saving timer duration: $e');
-      // 저장 실패 시 이전 상태로 복원
-      _duration = oldDuration;
-      _remainingTime = oldDuration;
-      notifyListeners();
-      return false;
-    }
-  }
-
   void start() {
     if (_status == TimerStatus.initial ||
         _status == TimerStatus.paused ||
@@ -236,12 +208,12 @@ class TimerProvider with ChangeNotifier {
       addRecord();
     }
     _timer?.cancel();
-    _duration = 1800;
+    _duration = settingsProvider.timerDuration * 60;
     _remainingTime = _duration;
     _status = TimerStatus.initial;
     _title = '무제';
     _startTime = null;
-    _initialDuration = 1800;
+    _initialDuration = _duration;
     notifyListeners();
   }
 
@@ -253,6 +225,7 @@ class TimerProvider with ChangeNotifier {
       timer.cancel();
       _status = TimerStatus.finished;
       addRecord();
+      notificationService.showNotification('Focus Timer', 'Timer finished!');
       notifyListeners();
     }
   }
@@ -367,6 +340,7 @@ class TimerProvider with ChangeNotifier {
   @override
   void dispose() {
     _timer?.cancel();
+    settingsProvider.removeListener(_updateTimerDuration);
     super.dispose();
   }
 }

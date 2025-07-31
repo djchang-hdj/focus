@@ -1,3 +1,6 @@
+import 'package:focus/pages/settings_page.dart';
+import 'package:focus/providers/settings_provider.dart';
+import 'package:focus/services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:focus/providers/theme_provider.dart';
@@ -15,6 +18,9 @@ void main() async {
 
   await initializeDateFormatting('ko_KR', null);
 
+  final NotificationService notificationService = NotificationService();
+  await notificationService.init();
+
   // Windows에서 접근성 에러 로그 비활성화
   if (Platform.isWindows) {
     SemanticsBinding.instance.ensureSemantics();
@@ -23,7 +29,8 @@ void main() async {
   // Provider 초기화 및 에러 처리
   final themeProvider = ThemeProvider();
   final taskProvider = TaskProvider();
-  final timerProvider = TimerProvider();
+  final settingsProvider = SettingsProvider();
+  final timerProvider = TimerProvider(notificationService: notificationService, settingsProvider: settingsProvider);
 
   try {
     // 타임아웃을 추가하여 무한 대기 방지
@@ -59,6 +66,9 @@ void main() async {
         ),
         ChangeNotifierProvider.value(
           value: timerProvider,
+        ),
+        ChangeNotifierProvider.value(
+          value: settingsProvider,
         ),
       ],
       child: const MyApp(),
@@ -426,6 +436,7 @@ class AppHeader extends StatelessWidget {
                         color: colorScheme.onSurface,
                         letterSpacing: -0.5,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   // 데이터 삭제 버튼
@@ -444,6 +455,20 @@ class AppHeader extends StatelessWidget {
                       isPlatformDark,
                       themeProvider,
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  // 설정 버튼
+                  _buildHeaderButton(
+                    context: context,
+                    icon: Icons.settings_outlined,
+                    label: '',
+                    color: colorScheme.secondary,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SettingsPage()),
+                      );
+                    },
                   ),
                 ],
               ),

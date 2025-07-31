@@ -375,37 +375,43 @@ class _TaskListState extends State<TaskList> {
             ],
           ),
           const SizedBox(height: 12),
-          Stack(
-            children: [
-              // 백그라운드 트랙
-              Container(
-                height: 12,
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              // 진행상태 표시
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeInOut,
-                height: 12,
-                width: MediaQuery.of(context).size.width *
-                    completionRate *
-                    0.8, // 컨테이너 크기에 맞게 조정
-                decoration: BoxDecoration(
-                  color: progressColor,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: progressColor.withOpacity(0.3),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+          TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+            tween: Tween<double>(
+              begin: 0,
+              end: completionRate,
+            ),
+            builder: (context, value, child) {
+              return Stack(
+                children: [
+                  // 백그라운드 트랙
+                  Container(
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ],
-                ),
-              ),
-            ],
+                  ),
+                  // 진행상태 표시
+                  Container(
+                    height: 12,
+                    width: MediaQuery.of(context).size.width * value * 0.8, // 컨테이너 크기에 맞게 조정
+                    decoration: BoxDecoration(
+                      color: progressColor,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: progressColor.withOpacity(0.3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

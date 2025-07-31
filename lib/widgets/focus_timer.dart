@@ -1050,22 +1050,28 @@ class _FocusTimerState extends State<FocusTimer> {
                               const SizedBox(height: 8),
                               Row(
                                 children: [
-                                  _buildRecordInfoItem(
-                                    context,
-                                    Icons.access_time_outlined,
-                                    startTime,
+                                  Flexible(
+                                    child: _buildRecordInfoItem(
+                                      context,
+                                      Icons.access_time_outlined,
+                                      startTime,
+                                    ),
                                   ),
                                   const SizedBox(width: 16),
-                                  _buildRecordInfoItem(
-                                    context,
-                                    Icons.timelapse_outlined,
-                                    '$progressMinutes분/$duration분',
+                                  Flexible(
+                                    child: _buildRecordInfoItem(
+                                      context,
+                                      Icons.timelapse_outlined,
+                                      '$progressMinutes분/$duration분',
+                                    ),
                                   ),
                                   const SizedBox(width: 16),
-                                  _buildRecordInfoItem(
-                                    context,
-                                    Icons.percent_outlined,
-                                    '${(record.progressRate * 100).round()}%',
+                                  Flexible(
+                                    child: _buildRecordInfoItem(
+                                      context,
+                                      Icons.percent_outlined,
+                                      '${(record.progressRate * 100).round()}%',
+                                    ),
                                   ),
                                 ],
                               ),
