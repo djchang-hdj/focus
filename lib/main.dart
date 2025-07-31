@@ -30,7 +30,9 @@ void main() async {
   final themeProvider = ThemeProvider();
   final taskProvider = TaskProvider();
   final settingsProvider = SettingsProvider();
-  final timerProvider = TimerProvider(notificationService: notificationService, settingsProvider: settingsProvider);
+  final timerProvider = TimerProvider(
+      notificationService: notificationService,
+      settingsProvider: settingsProvider);
 
   try {
     // 타임아웃을 추가하여 무한 대기 방지
@@ -84,7 +86,7 @@ class MyApp extends StatelessWidget {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, _) {
         return MaterialApp(
-          title: '생각하고 말하자',
+          title: 'Focus',
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.themeMode,
@@ -430,7 +432,7 @@ class AppHeader extends StatelessWidget {
                   const SizedBox(width: 16),
                   Expanded(
                     child: Text(
-                      '생각하고 말하자',
+                      'Focus',
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: colorScheme.onSurface,
@@ -466,7 +468,8 @@ class AppHeader extends StatelessWidget {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const SettingsPage()),
+                        MaterialPageRoute(
+                            builder: (context) => const SettingsPage()),
                       );
                     },
                   ),

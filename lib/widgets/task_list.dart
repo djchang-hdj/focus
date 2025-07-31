@@ -201,9 +201,9 @@ class _TaskListState extends State<TaskList> {
       '이메일 플래그 지금 정리하라!',
       '과제 지금 관리하라!',
       '오늘 할 일 목록 당장 점검하라!',
-      '책 30분 이상 읽어라!',
-      '1시간 이상 집중 공부하라!',
-      '오늘의 일기 반드시 작성하라!',
+      '오늘 무슨책을 읽을 것인가?',
+      'Bytebyetgo, algorithm, AI, 일본어 중 하나 해라',
+      '오늘의 일기 언제 쓸 것인가?',
     ];
 
     for (final task in defaultTasks) {
@@ -389,14 +389,17 @@ class _TaskListState extends State<TaskList> {
                   Container(
                     height: 12,
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                      color:
+                          colorScheme.surfaceContainerHighest.withOpacity(0.5),
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   // 진행상태 표시
                   Container(
                     height: 12,
-                    width: MediaQuery.of(context).size.width * value * 0.8, // 컨테이너 크기에 맞게 조정
+                    width: MediaQuery.of(context).size.width *
+                        value *
+                        0.8, // 컨테이너 크기에 맞게 조정
                     decoration: BoxDecoration(
                       color: progressColor,
                       borderRadius: BorderRadius.circular(12),

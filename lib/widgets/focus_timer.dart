@@ -1048,33 +1048,30 @@ class _FocusTimerState extends State<FocusTimer> {
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: _buildRecordInfoItem(
-                                      context,
-                                      Icons.access_time_outlined,
-                                      startTime,
+                              SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      children: [
+                                        _buildRecordInfoItem(
+                                          context,
+                                          Icons.access_time_outlined,
+                                          startTime,
+                                        ),
+                                        const SizedBox(width: 16),
+                                        _buildRecordInfoItem(
+                                          context,
+                                          Icons.timelapse_outlined,
+                                          '$progressMinutes분/$duration분',
+                                        ),
+                                        const SizedBox(width: 16),
+                                        _buildRecordInfoItem(
+                                          context,
+                                          Icons.percent_outlined,
+                                          '${(record.progressRate * 100).round()}%',
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(width: 16),
-                                  Flexible(
-                                    child: _buildRecordInfoItem(
-                                      context,
-                                      Icons.timelapse_outlined,
-                                      '$progressMinutes분/$duration분',
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Flexible(
-                                    child: _buildRecordInfoItem(
-                                      context,
-                                      Icons.percent_outlined,
-                                      '${(record.progressRate * 100).round()}%',
-                                    ),
-                                  ),
-                                ],
-                              ),
                             ],
                           ),
                         ),
