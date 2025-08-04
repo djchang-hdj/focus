@@ -139,8 +139,8 @@ class TimerProvider with ChangeNotifier {
   // 저장된 타이머 기록 불러오기
   Future<void> _loadRecords() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final recordsJson = prefs.getString(_recordsKey);
+      _prefs = await SharedPreferences.getInstance();
+      final recordsJson = _prefs.getString(_recordsKey);
 
       if (recordsJson != null) {
         final Map<String, dynamic> recordsMap = jsonDecode(recordsJson);
